@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>诛仙丹青Build模拟器 (修复版)</title>
+    <style>
+        :root { 
+            --primary: #3498db; 
+            --bg: #f5f6fa; 
+            --dark: #2c3e50; 
+            --panel: #ffffff; 
+            --gold: #f1c40f; 
+            --gray: #bdc3c7; 
+            --card-blue: #3498db; 
+            --card-red: #e74c3c;
+            --card-green: #27ae60;
+        }
+        body { font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif; background: var(--bg); color: var(--dark); margin: 0; padding: 20px; display: flex; justify-content: center; height: 100vh; box-sizing: border-box; overflow: hidden; }
+        
+        .layout { display: flex; width: 100%; max-width: 1600px; gap: 20px; height: 100%; }
+        
+        /* --- 左侧面板 --- */
+        .card-list-panel { flex: 0 0 720px; display: flex; flex-direction: column; background: var(--panel); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); overflow: hidden; }
+        
+        .list-header { 
+            padding: 15px 20px; background: #ecf0f1; border-bottom: 1px solid #bdc3c7; 
+            display: flex; justify-content: space-between; align-items: center; user-select: none; 
+        }
+        
+        .header-left-group { display: flex; align-items: center; gap: 15px; }
+        .header-title { font-weight: bold; font-size: 18px; color: var(--dark); }
+        .global-ctrl { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #7f8c8d; }
+        
+        .clear-btn { 
+            font-size: 12px; cursor: pointer; color: #fff; background: #e74c3c; 
+            border: none; padding: 6px 15px; border-radius: 4px; 
+            transition: all 0.2s; font-weight: bold;
+        }
+        .clear-btn:hover { background: #c0392b; box-shadow: 0 2px 5px rgba(231, 76, 60, 0.3); }
+
+        /* 卡牌滚动区 (3列) */
+        .scroll-area { 
+            flex: 1; overflow-y: auto; padding: 15px; 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 12px; 
+            align-content: start;
+        }
+        
+        /* 卡牌单元格 */
+        .card-item { 
+            background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; 
+            cursor: pointer; transition: all 0.1s; user-select: none;
+            display: flex; flex-direction: column; justify-content: center;
+            height: 72px; /* 调高高度 */
+            padding: 0 12px; position: relative; gap: 8px;
+        }
+        .card-item:hover { border-color: #bdc3c7; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+        
+        /* 装备状态 */
+        .card-item.equipped { 
+            background: #eef9fe; 
+            border-color: #3498db; 
+            box-shadow: 0 0 0 1px #3498db inset; 
+        }
+        
+        /* 删除 active-detail 的黄色样式，保持原样 */
+
+        /* 卡牌内容 */
+        .card-meta { display: flex; align-items: center; gap: 6px; }
+        .card-name { font-weight: 700; font-size: 15px; color: #333; white-space: nowrap; }
+        .card-cost { background: var(--gold); color: #fff; font-size: 11px; padding: 2px 5px; border-radius: 3px; font-weight: bold; min-width: 14px; text-align: center;}
+        .card-type { font-size: 10px; padding: 2px 4px; border-radius: 3px; color: white;}
+        .type-human { background-color: var(--card-blue); }
+        .type-beast { background-color: var(--card-red); }
+        .type-tool { background-color: var(--card-green); }
+
+        /* 等级圆点 (变大) */
+        .dots-wrapper { display: flex; gap: 6px; align-items: center; }
+        .dot { 
+            width: 12px; height: 12px; /* 变大 */
+            border-radius: 50%; background: #e0e0e0; cursor: pointer; transition: all 0.2s; border: 1px solid transparent; 
+        }
+        .dot:hover { transform: scale(1.2); border-color: var(--gold); background: #ccc; }
+        .dot.active { background: var(--gold); box-shadow: 0 0 2px rgba(241, 196, 15, 0.6); }
+
+
+        /* --- 右侧面板 --- */
+        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+        
+        .detail-card { background: var(--panel); padding: 15px 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); min-height: 100px; }
+        .detail-title { font-size: 18px; font-weight: bold; margin-bottom: 5px; color: var(--dark); border-bottom: 2px solid var(--primary); padding-bottom: 5px; display: inline-block;}
+        .detail-desc { font-size: 14px; line-height: 1.6; color: #555; }
+        .highlight { color: #e74c3c; font-weight: bold; }
+        
+        /* 仪表盘 */
+        .dashboard { flex: 1; background: var(--dark); color: white; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; }
+        
+        .input-group { display: flex; gap: 10px; margin-bottom: 5px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; align-items: center;}
+        .inp-item { display: flex; flex-direction: column; gap: 5px; }
+        .inp-item label { font-size: 12px; color: #bdc3c7; white-space: nowrap; }
+        .inp-item input { background: rgba(0,0,0,0.3); border: 1px solid #555; color: white; padding: 6px; border-radius: 4px; width: 80px; text-align: center; font-weight: bold; }
+
+        .big-stat-box { display: flex; flex-direction: column; align-items: flex-end; justify-content: center; padding-left: 15px; border-left: 1px solid #555; margin-left: auto; }
+        
+        /* 伤害明细表 */
+        .dps-breakdown { background: rgba(0,0,0,0.2); border-radius: 8px; padding: 10px; margin-top: 10px; flex: 1; overflow-y: auto; }
+        
+        .breakdown-header { display: flex; padding: 8px 0; border-bottom: 1px solid #7f8c8d; font-size: 12px; color: #bdc3c7; font-weight: bold; user-select: none; }
+        .col-name { flex: 2; padding-left: 5px; }
+        .col-freq { flex: 1.2; text-align: center; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: color 0.2s;}
+        .col-freq:hover { color: white; }
+        .col-val { flex: 1.5; text-align: right; cursor: pointer; display: flex; align-items: center; justify-content: flex-end; gap: 4px; transition: color 0.2s;}
+        .col-val:hover { color: white; }
+        .col-pct { flex: 0.8; text-align: right; }
+        
+        .breakdown-row { display: flex; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 13px; align-items: center; }
+        .breakdown-row:last-child { border-bottom: none; }
+        .breakdown-row:hover { background: rgba(255,255,255,0.05); }
+
+        /* 最终结果栏 */
+        .final-result { border-top: 1px solid #555; padding-top: 20px; margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        
+        .res-block { flex: 1; text-align: right; display: flex; flex-direction: column; justify-content: center; padding: 0 10px; border-right: 1px solid #555; }
+        .res-block:last-child { border-right: none; }
+        
+        .res-label { font-size: 12px; color: #bdc3c7; margin-bottom: 4px; }
+        .res-val { font-size: 24px; font-weight: bold; }
+        
+        .total-color { color: #f1c40f; }
+        .card-color { color: #3498db; }
+        .increase-tag { background: #27ae60; color: white; padding: 5px 10px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block; white-space: nowrap;}
+        
+        .sort-arrow { font-size: 10px; opacity: 0.5; }
+
+    </style>
+</head>
+<body>
+
+<div class="layout">
+    <div class="card-list-panel">
+        <div class="list-header">
+            <div class="header-left-group">
+                <span class="header-title">丹青配置</span>
+                <div class="global-ctrl">
+                    <span>全部等级调整:</span>
+                    <div class="dots-wrapper" id="global-dots"></div>
+                </div>
+            </div>
+            
+            <button class="clear-btn" onclick="clearAll()">清空配置</button>
+        </div>
+        
+        <div class="scroll-area" id="cardList"></div>
+    </div>
+
+    <div class="right-panel">
+        
+        <div class="detail-card">
+            <div id="detail-content">
+                <div style="color: #ccc; padding-top: 25px; text-align: center;">单击卡牌查看详情 / 双击装备或卸下</div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="input-group">
+                <div class="inp-item">
+                    <label>玩家攻击力</label>
+                    <input type="number" id="baseAtk" value="10000" oninput="calc()">
+                </div>
+                <div class="inp-item">
+                    <label>固有DPS</label>
+                    <input type="number" id="baseDps" value="50000" oninput="calc()">
+                </div>
+                
+                <div class="big-stat-box" style="margin-left: 20px; border-left:none;">
+                    <div style="font-size: 12px; color:#bdc3c7;">Cost 占用</div>
+                    <div style="font-size: 20px; font-weight:bold; color:#f1c40f;"><span id="currCost">0</span></div>
+                </div>
+                
+                <div class="big-stat-box">
+                    <div style="font-size: 12px; color:#bdc3c7;">丹青核心攻击</div>
+                    <div style="font-size: 20px; font-weight:bold; color:#3498db;" id="res-flatAtk">0</div>
+                </div>
+
+                <div class="big-stat-box">
+                    <div style="font-size: 12px; color:#bdc3c7;">最终攻击力</div>
+                    <div style="font-size: 20px; font-weight:bold; color:#fff;" id="res-finalAtk">0</div>
+                </div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:10px;">
+                <div style="font-size:12px; color:#95a5a6;">伤害构成分析</div>
+            </div>
+            
+            <div class="dps-breakdown">
+                <div class="breakdown-header">
+                    <div class="col-name">伤害来源</div>
+                    
+                    <div class="col-freq" onclick="toggleFreqMode()">
+                        <span id="header-freq-text">触发间隔</span>
+                        <span style="font-size:10px;">⇄</span>
+                    </div>
+
+                    <div class="col-val" onclick="toggleSort()">
+                        <span>秒伤 (DPS)</span>
+                        <span class="sort-arrow" id="sort-arrow">▼</span>
+                    </div>
+                    
+                    <div class="col-pct">占比</div>
+                </div>
+                <div id="dps-list">
+                    </div>
+            </div>
+
+            <div class="final-result">
+                <div class="res-block">
+                    <div class="res-label">系统总秒伤 (Total)</div>
+                    <div class="res-val total-color" id="res-totalDps">0</div>
+                </div>
+
+                <div class="res-block" style="border-right:none;">
+                    <div class="res-label">丹青系统提供秒伤</div>
+                    <div class="res-val card-color" id="res-cardSystemDps">0</div>
+                </div>
+
+                <div style="flex:0 0 auto;">
+                     <div class="increase-tag" id="res-percent">+0.0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // 1. 数据定义
+    // ==========================================
+    const Linear = (v0, v6) => ({ type: 'linear', v0, v6 });
+    const Fixed = (v) => ({ type: 'fixed', val: v });
+
+    // 白字核心攻击常量
+    const FLAT_ATK_V0 = 44.9;
+    const FLAT_ATK_V6 = 58.2;
+
+    const DB = [
+        // --- 人族 ---
+        { id: 'xiaohuan', name: '小环', type: 'human', cost: 1, desc: '会心 +{val}', stat: Linear(280, 400), effect: 'crit_flat' },
+        { id: 'yanhong', name: '燕虹', type: 'human', cost: 1, desc: '冰箭基础伤害 {val}% 攻击力', stat: Linear(28, 40), effect: 'ice_base' },
+        { id: 'zhou', name: '周一仙', type: 'human', cost: 2, desc: '每有一张人族卡，攻击力增加 {val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk' },
+        { id: 'wenmin', name: '文敏', type: 'human', cost: 2, desc: '每 {freq} 秒发射3支冰箭', stat: {v0: 16, v6: 10}, effect: 'ice_add_freq' },
+        { id: 'shangguan', name: '上官策', type: 'human', cost: 2, desc: '冰箭有 {val}% 概率附加燃烧', stat: Linear(38, 50), effect: 'ice_trigger_burn' },
+        { id: 'linfeng', name: '林峰', type: 'human', cost: 3, desc: '燃烧判定时{val}%概率多一次判定(触发引燃)，召唤冰箭{ice}%概率多一根', stat: Linear(42, 60), effect: 'linfeng_dual' }, 
+        { id: 'zuogui', name: '左归', type: 'human', cost: 4, desc: '所有丹青特效伤害提升 {val}%', stat: Linear(28, 40), effect: 'global_dmg_mult' },
+        { id: 'qihao', name: '齐昊', type: 'human', cost: 5, desc: '60秒一次玄冰风暴({val}%伤害)，每冰箭减1秒CD', stat: Linear(1040, 1400), effect: 'qihao_nuke' },
+
+        // --- 兽族 ---
+        { id: 'turtle', name: '海龟', type: 'beast', cost: 1, desc: '专精 +{val}', stat: Linear(280, 400), effect: 'mastery_flat' },
+        { id: 'redant', name: '猩红巨蚁', type: 'beast', cost: 1, desc: '燃烧基础伤害 {val}% 攻击力 (每3秒一跳)', stat: Linear(1.4, 2), effect: 'burn_base' },
+        { id: 'tiger', name: '猛虎', type: 'beast', cost: 2, desc: '每有一张兽族卡，攻击力增加 {val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk' },
+        { id: 'twotail', name: '二尾妖狐', type: 'beast', cost: 2, desc: '引燃：每次施加燃烧(含林峰额外触发)时，瞬间造成 {val}% 伤害', stat: Linear(28, 40), effect: 'burn_on_hit' },
+        { id: 'ghostdog', name: '幽冥犬', type: 'beast', cost: 2, desc: '被攻击添加燃烧 (不计入DPS)', stat: Fixed(0), effect: 'none' },
+        { id: 'suishou', name: '岁兽', type: 'beast', cost: 3, desc: '脉冲命中时 {val}% 概率添加3层燃烧(视为3次独立施加)', stat: Linear(70, 100), effect: 'pulse_trigger_burn' },
+        { id: 'snowbear', name: '雪地熊', type: 'beast', cost: 4, desc: '召唤冰箭增加伤害 {val}% (未实装)', stat: Linear(0.38, 0.5), effect: 'snowbear_buff' },
+        { id: 'sixtail', name: '六尾魔狐', type: 'beast', cost: 5, desc: '燃烧8层引爆，造成每层 {val}% 的AOE伤害并清层', stat: Linear(50, 68), effect: 'sixtail_explode' },
+
+        // --- 器族 ---
+        { id: 'woodsword', name: '木剑', type: 'tool', cost: 1, desc: '攻击力增加 {val}% (固定)', stat: Linear(0.56, 0.80), effect: 'fixed_atk' },
+        { id: 'kite', name: '风筝', type: 'tool', cost: 1, desc: '调息 +{val}', stat: Linear(280, 400), effect: 'haste_flat' },
+        { id: 'fan', name: '折扇', type: 'tool', cost: 1, desc: '脉冲基础伤害 {val}% 攻击力 (每15秒)', stat: Linear(40, 52), effect: 'pulse_base' },
+        { id: 'banner', name: '仙人布幡', type: 'tool', cost: 2, desc: '每有一张器族卡，攻击力增加 {val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk' },
+        { id: 'dice', name: '神木骰', type: 'tool', cost: 2, desc: '脉冲追加 {val}% 伤害(忽略进场效果)', stat: Fixed(70), effect: 'dice_buff' },
+        { id: 'bamboo', name: '寒冰箭', type: 'tool', cost: 3, desc: '每 {freq} 次冰箭触发一次脉冲', stat: {v0: 16, v6: 10}, effect: 'ice_count_pulse' },
+        { id: 'mirror', name: '六合镜', type: 'tool', cost: 5, desc: '脉冲50%概率回响，造成4次 {val}% 伤害', stat: Linear(140, 200), effect: 'mirror_echo' },
+    ];
+
+    const state = {};
+    DB.forEach(c => state[c.id] = { equipped: false, level: 0 });
+
+    // UI State
+    let dpsSortDir = 'desc'; 
+    let freqMode = 'interval'; 
+    let globalLvState = 0;
+
+    // ==========================================
+    // 2. 逻辑计算
+    // ==========================================
+
+    function getStatVal(cardId) {
+        const card = DB.find(c => c.id === cardId);
+        const lv = state[cardId].level;
+        const s = card.stat;
+        if (s.type === 'fixed') return s.val;
+        const range = s.v6 - s.v0;
+        return s.v0 + range * (lv / 6);
+    }
+    
+    // 计算单张卡牌提供的白字攻击
+    function getCardFlatAtk(cardId) {
+        const c = DB.find(x => x.id === cardId);
+        const lv = state[cardId].level;
+        // 1费基准值
+        const range = FLAT_ATK_V6 - FLAT_ATK_V0;
+        const baseFlat = FLAT_ATK_V0 + range * (lv / 6);
+        // 乘以费用
+        return baseFlat * c.cost;
+    }
+
+    const isEq = (id) => state[id].equipped;
+
+    function calc() {
+        // --- 0. 统计 ---
+        let countHuman = 0, countBeast = 0, countTool = 0;
+        let costSum = 0;
+        let totalFlatAtk = 0; 
+
+        DB.forEach(c => {
+            if (isEq(c.id)) {
+                costSum += c.cost;
+                if (c.type === 'human') countHuman++;
+                if (c.type === 'beast') countBeast++;
+                if (c.type === 'tool') countTool++;
+                
+                // 累加白字
+                totalFlatAtk += getCardFlatAtk(c.id);
+            }
+        });
+
+        // --- 1. 面板 ---
+        const userInputAtk = parseFloat(document.getElementById('baseAtk').value) || 0;
+        const userBaseDps = parseFloat(document.getElementById('baseDps').value) || 0;
+        
+        let atkPct = 0;
+        if (isEq('zhou')) atkPct += getStatVal('zhou') * countHuman;
+        if (isEq('tiger')) atkPct += getStatVal('tiger') * countBeast;
+        if (isEq('banner')) atkPct += getStatVal('banner') * countTool;
+        if (isEq('woodsword')) atkPct += getStatVal('woodsword');
+
+        // 核心公式: (玩家基础 + 丹青白字) * (1 + 百分比)
+        const realBaseAtk = userInputAtk + totalFlatAtk;
+        const finalAtk = realBaseAtk * (1 + atkPct/100);
+        
+        // 收益拆解
+        // 纯百分比加成带来的收益
+        const bonusDpsFromPct = userBaseDps * (1 + atkPct/100) - userBaseDps;
+
+        // 白字提升
+        const flatAtkContributionRatio = (finalAtk > 0) ? (totalFlatAtk * (1 + atkPct/100)) / finalAtk : 0;
+
+
+        // --- 2. 基础倍率 ---
+        const ratios = {
+            ice: getStatVal('yanhong'),
+            burn: getStatVal('redant'),
+            pulse: getStatVal('fan'),
+            qihao: getStatVal('qihao'),
+            foxExplode: getStatVal('sixtail'),
+            ignite: getStatVal('twotail'),
+            mirror: getStatVal('mirror'),
+            dice: getStatVal('dice'),
+            suishouChance: getStatVal('suishou')
+        };
+
+        let globalMult = 1.0;
+        if (isEq('zuogui')) globalMult += (getStatVal('zuogui') / 100);
+
+        // --- 3. 林峰 ---
+        let linfengIceChance = 0;
+        let linfengBurnChance = 0;
+        if (isEq('linfeng')) {
+            linfengBurnChance = getStatVal('linfeng') / 100;
+            const lv = state['linfeng'].level;
+            linfengIceChance = 0.7 + ((1.0 - 0.7)/6 * lv);
+        }
+
+        // --- 4. 频率 ---
+        let rawIceRate = 0; 
+        if (isEq('yanhong')) rawIceRate += (1/6);
+        if (isEq('wenmin')) rawIceRate += (3 / getStatVal('wenmin'));
+        let finalIceRate = rawIceRate * (1 + linfengIceChance);
+
+        let pulseRate = 0;
+        if (isEq('fan')) pulseRate += (1/15);
+        if (isEq('bamboo') && finalIceRate > 0) {
+            pulseRate += (finalIceRate / getStatVal('bamboo'));
+        }
+        let pulseHitRate = pulseRate; 
+
+        // 燃烧事件
+        let eventRedant = isEq('redant') ? (1/8) : 0;
+        let eventShangguan = isEq('shangguan') ? (finalIceRate * getStatVal('shangguan')/100) : 0;
+        let eventSuishou = 0;
+        if (isEq('suishou')) {
+            const triggerFreq = pulseHitRate * (ratios.suishouChance / 100);
+            eventSuishou = triggerFreq * 3;
+        }
+        let totalBaseEvents = eventRedant + eventShangguan + eventSuishou;
+        let totalIgniteTriggers = totalBaseEvents * (1 + linfengBurnChance);
+        let finalStackRate = totalIgniteTriggers; 
+
+        // --- 5. 伤害构成 ---
+        let breakdown = [
+            { id: 'base', label: ' 玩家固有伤害', val: userBaseDps, freq: 0 },
+            { id: 'buff', label: ' 攻击力百分比收益', val: bonusDpsFromPct, freq: 0 },
+            { id: 'flat', label: ' 丹青白字核心提升', val: 0, freq: 0 },
+            { id: 'ice', label: ' 冰箭直伤', val: 0, freq: finalIceRate },
+            { id: 'pulse', label: ' 脉冲总伤', val: 0, freq: pulseHitRate },
+            { id: 'burn', label: ' 燃烧 DOT', val: 0, freq: 0 },
+            { id: 'ignite', label: ' 妖狐引燃', val: 0, freq: totalIgniteTriggers },
+            { id: 'explode', label: ' 六尾引爆', val: 0, freq: 0 },
+            { id: 'qihao', label: ' 齐昊玄冰风暴', val: 0, freq: 0 }
+        ];
+
+        let skillTotalDps = 0;
+
+        if (finalIceRate > 0) {
+            const val = finalAtk * (ratios.ice / 100) * globalMult * finalIceRate;
+            breakdown.find(x=>x.id==='ice').val = val;
+            skillTotalDps += val;
+        }
+
+        if (pulseHitRate > 0) {
+            let pulseDmgRatio = ratios.pulse;
+            if (isEq('dice')) pulseDmgRatio += ratios.dice;
+            let pulseBaseDps = finalAtk * (pulseDmgRatio / 100) * globalMult * pulseHitRate;
+            let mirrorDps = 0;
+            if (isEq('mirror')) {
+                mirrorDps = finalAtk * (ratios.mirror / 100) * globalMult * pulseHitRate * 0.5 * 4;
+            }
+            const val = pulseBaseDps + mirrorDps;
+            breakdown.find(x=>x.id==='pulse').val = val;
+            skillTotalDps += val;
+        }
+
+        if (finalStackRate > 0) {
+            let avgStacks = 12;
+            let explodeFreq = 0;
+            let label = ' 燃烧 DOT (12层)';
+            if (isEq('sixtail')) {
+                avgStacks = 4;
+                explodeFreq = finalStackRate / 8;
+                label = ' 燃烧 DOT (4层)';
+                const val = finalAtk * (ratios.foxExplode / 100 * 8) * globalMult * explodeFreq;
+                breakdown.find(x=>x.id==='explode').freq = explodeFreq;
+                breakdown.find(x=>x.id==='explode').val = val;
+                skillTotalDps += val;
+            }
+            let burnObj = breakdown.find(x=>x.id==='burn');
+            burnObj.freq = 0.3333;
+            const val = finalAtk * (ratios.burn / 100) * avgStacks * globalMult * (1/3);
+            burnObj.val = val;
+            burnObj.label = label;
+            skillTotalDps += val;
+        }
+
+        if (isEq('twotail')) {
+            const val = finalAtk * (ratios.ignite / 100) * globalMult * totalIgniteTriggers;
+            breakdown.find(x=>x.id==='ignite').val = val;
+            skillTotalDps += val;
+        }
+
+        if (isEq('qihao')) {
+            const realCd = 60 / (1 + finalIceRate);
+            const qFreq = 1 / realCd;
+            const qObj = breakdown.find(x=>x.id==='qihao');
+            qObj.freq = qFreq;
+            const val = finalAtk * (ratios.qihao / 100) * globalMult * qFreq;
+            qObj.val = val;
+            skillTotalDps += val;
+        }
+
+        // 计算总秒伤
+        const currentTotalDps = userBaseDps + bonusDpsFromPct + skillTotalDps;
+        const flatAtkGainValue = currentTotalDps * flatAtkContributionRatio;
+
+        // 更新 breakdown 中的 flat 行
+        breakdown.find(x=>x.id==='flat').val = flatAtkGainValue;
+
+        breakdown.forEach(item => {
+            if (item.id !== 'flat') {
+                item.val = item.val * (1 - flatAtkContributionRatio);
+            }
+        });
+        
+        // --- 6. 统计与渲染 ---
+        let totalDps = currentTotalDps;
+        
+        // 丹青系统提供 = Total - userBaseDps (原始)
+        const cardSystemDps = totalDps - userBaseDps;
+
+        document.getElementById('currCost').innerText = costSum;
+        document.getElementById('res-flatAtk').innerText = Math.round(totalFlatAtk);
+        document.getElementById('res-finalAtk').innerText = Math.round(finalAtk);
+        document.getElementById('res-totalDps').innerText = Math.round(totalDps).toLocaleString();
+        document.getElementById('res-cardSystemDps').innerText = Math.round(cardSystemDps).toLocaleString();
+
+        const inc = userBaseDps > 0 ? ((totalDps - userBaseDps)/userBaseDps * 100) : 0;
+        document.getElementById('res-percent').innerText = `+${inc.toFixed(1)}%`;
+
+        // 渲染列表 (排序)
+        const dpsListEl = document.getElementById('dps-list');
+        
+        // 排序逻辑
+        let sortedList = breakdown.sort((a, b) => {
+            return dpsSortDir === 'desc' ? b.val - a.val : a.val - b.val;
+        });
+
+        // 辅助函数
+        const fmtFreq = (f) => {
+            if (f <= 0) return '-';
+            if (freqMode === 'rate') {
+                if (f < 0.01) return '<0.01Hz';
+                return f.toFixed(2) + 'Hz';
+            } else {
+                const period = 1/f;
+                if (period < 0.1) return '<0.1s';
+                return period.toFixed(2) + 's';
+            }
+        };
+
+        let html = sortedList.map(obj => {
+            if (obj.val <= 0 && obj.freq <= 0 && obj.id !== 'base') return '';
+            const pct = totalDps > 0 ? (obj.val / totalDps * 100).toFixed(1) : '0.0';
+            const freqStr = obj.freq > 0 ? fmtFreq(obj.freq) : '-';
+            let color = '#fff';
+            if(obj.id==='ice') color='#3498db';
+            if(obj.id==='burn') color='#e74c3c';
+            if(obj.id==='pulse') color='#2ecc71';
+            if(obj.id==='ignite') color='#d35400';
+            if(obj.id==='explode') color='#e67e22';
+            if(obj.id==='qihao') color='#9b59b6';
+            if(obj.id==='base' || obj.id==='buff') color='#7f8c8d';
+            if(obj.id==='flat') color='#00d2d3'; 
+
+            return `
+            <div class="breakdown-row">
+                <div class="col-name"><span style="color:${color}">●</span> ${obj.label}</div>
+                <div class="col-freq">${freqStr}</div>
+                <div class="col-val" style="color:${color}">${Math.round(obj.val).toLocaleString()}</div>
+                <div class="col-pct">${pct}%</div>
+            </div>`;
+        }).join('');
+        
+        dpsListEl.innerHTML = html;
+        
+        const arrow = document.getElementById('sort-arrow');
+        arrow.innerText = dpsSortDir === 'desc' ? '▼' : '▲';
+        arrow.style.color = '#f1c40f';
+    }
+
+    // ==========================================
+    // 3. 界面交互
+    // ==========================================
+    
+    // 生成点阵
+    function makeDots(id, currentLv, isGlobal=false) {
+        let html = '';
+        for (let i = 1; i <= 6; i++) {
+            const isActive = i <= currentLv;
+            const clickFn = isGlobal ? `setGlobalLevel(${i})` : `setLevel('${id}', ${i})`;
+            html += `<div class="dot ${isActive ? 'active' : ''}" onclick="${clickFn}; event.stopPropagation();"></div>`;
+        }
+        return html;
+    }
+
+    function renderList() {
+        const container = document.getElementById('cardList');
+        
+        let displayList = [...DB];
+        // 排序：分类 (Human->Beast->Tool) -> 费用 (ASC)
+        displayList.sort((a, b) => {
+            const map = { human: 1, beast: 2, tool: 3 };
+            if (map[a.type] !== map[b.type]) return map[a.type] - map[b.type];
+            return a.cost - b.cost;
+        });
+
+        // 修正逻辑：点击主体查看详情，双击装备/卸下
+        // 我们需要把 ondblclick 放在整体上，把 onclick 放在整体上。
+        // 但是 click 会在 dblclick 之前触发。为了区分，通常比较麻烦。
+        // 但这里我们简单处理：点击(onclick) = 详情，双击(ondblclick) = 装备。
+        // 由于 click 事件总是先于 dblclick，双击时会先触发详情然后触发装备，这是可以接受的。
+        // 甚至更好：用户双击装备时顺便看了眼详情。
+        
+        container.innerHTML = displayList.map(c => `
+            <div class="card-item ${state[c.id].equipped ? 'equipped' : ''} ${currDetail === c.id ? 'active-detail' : ''}" id="row-${c.id}" onclick="showDetail('${c.id}')" ondblclick="toggleCard('${c.id}')">
+                
+                <div class="card-meta">
+                    <span class="card-type type-${c.type}">${c.type==='human'?'人':c.type==='beast'?'兽':'器'}</span>
+                    <span class="card-name">${c.name}</span>
+                    <span class="card-cost">${c.cost}费</span>
+                </div>
+                
+                <div class="dots-wrapper">
+                    ${makeDots(c.id, state[c.id].level)}
+                </div>
+            </div>
+        `).join('');
+        
+        document.getElementById('global-dots').innerHTML = makeDots('global', globalLvState, true);
+        
+        calc();
+    }
+
+    function toggleCard(id) {
+        state[id].equipped = !state[id].equipped; 
+        renderList();
+    }
+
+    function setLevel(id, lv) {
+        if (state[id].level === lv) {
+            state[id].level = 0; 
+        } else {
+            state[id].level = lv;
+        }
+        renderList();
+        if (currDetail === id) showDetail(id);
+    }
+
+    function setGlobalLevel(lv) {
+        if (globalLvState === lv) lv = 0;
+        globalLvState = lv;
+        DB.forEach(c => state[c.id].level = lv);
+        renderList();
+        if (currDetail) showDetail(currDetail);
+    }
+
+    function clearAll() {
+        DB.forEach(c => state[c.id].equipped = false);
+        renderList();
+    }
+
+    function toggleSort() {
+        dpsSortDir = dpsSortDir === 'desc' ? 'asc' : 'desc';
+        calc();
+    }
+
+    function toggleFreqMode() {
+        freqMode = freqMode === 'interval' ? 'rate' : 'interval';
+        document.getElementById('header-freq-text').innerText = freqMode === 'interval' ? '触发间隔' : '触发频率';
+        calc();
+    }
+
+    let currDetail = null;
+    function showDetail(id) {
+        currDetail = id;
+        renderList(); 
+        
+        const c = DB.find(x => x.id === id);
+        let val = getStatVal(id);
+        
+        let desc = c.desc;
+        if (id === 'linfeng') {
+            const iceChance = 70 + ((100-70)/6 * state[id].level);
+            desc = desc.replace('{val}', `<span class="highlight">${val.toFixed(2)}</span>`)
+                       .replace('{ice}', `<span class="highlight">${iceChance.toFixed(2)}</span>`);
+        } else {
+            const displayVal = val.toFixed(2);
+            desc = desc.replace('{val}', `<span class="highlight">${displayVal}</span>`)
+                       .replace('{freq}', `<span class="highlight">${displayVal}</span>`);
+        }
+
+        document.getElementById('detail-content').innerHTML = `
+            <div class="detail-title">${c.name} <span style="font-size:12px; color:#999; font-weight:normal;">(Lv.${state[id].level})</span></div>
+            <div class="detail-desc">${desc}</div>
+        `;
+    }
+
+    renderList();
+</script>
+
+</body>
+</html>
