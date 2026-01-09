@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>诛仙丹青Build计算器 (Final v2)</title>
+    <title>诛仙丹青Build计算器</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root { 
             --primary: #3498db; 
@@ -183,6 +184,75 @@
         
         .sort-arrow { font-size: 10px; opacity: 0.5; }
 
+        /* =========================================
+           移动端适配 (响应式布局)
+           当屏幕宽度小于 1024px 时生效
+           ========================================= */
+        @media screen and (max-width: 1024px) {
+            body {
+                /* 取消固定高度，允许页面在手机上上下滚动 */
+                height: auto;
+                overflow-y: auto; 
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .layout {
+                /* 关键：从左右排列(row)改为上下排列(column) */
+                flex-direction: column;
+                height: auto;
+            }
+
+            /* 左侧面板适配 */
+            .card-list-panel {
+                flex: none; /* 取消固定宽度限制 */
+                width: 100%; /* 占满屏幕宽度 */
+                height: auto;
+                max-height: 500px; /* 给列表一个最大高度，防止太长 */
+                margin-bottom: 20px; /* 与下方内容保持间距 */
+            }
+
+            .scroll-area {
+                /* 手机上保持列表内部滚动，但不占满全屏 */
+                height: 300px; 
+                overflow-y: auto;
+            }
+
+            /* 右侧面板适配 */
+            .right-panel {
+                width: 100%;
+                flex: none;
+            }
+
+            /* 控制区适配：变成多行显示，防止挤压 */
+            .unified-row {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .left-group, .right-group {
+                width: 100%;
+                justify-content: space-between;
+                border-left: none; /* 去掉原本的分割线 */
+                padding-left: 0;
+            }
+            
+            .right-group {
+                border-top: 1px solid rgba(255,255,255,0.1); /* 改为上方分割线 */
+                padding-top: 15px;
+            }
+
+            /* 底部结果卡片适配：手机上一行显示一个或两个 */
+            .final-result {
+                grid-template-columns: 1fr; /* 一行一个 */
+                gap: 10px;
+            }
+            
+            /* 调整字体大小，防止手机上字太大撑破布局 */
+            .stat-val { font-size: 18px; }
+            .card-item { height: auto; padding: 10px; } /* 卡片高度自适应 */
+        }
+        
     </style>
 </head>
 <body>
