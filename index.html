@@ -165,6 +165,37 @@
         .breakdown-row:last-child { border-bottom: none; }
         .breakdown-row:hover { background: rgba(255,255,255,0.05); }
 
+        /* 额外效果区域样式 */
+        .extra-box {
+            background: rgba(255,255,255,0.03);
+            border: 1px dashed rgba(255,255,255,0.15);
+            border-radius: 8px;
+            padding: 10px 15px;
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .extra-title {
+            font-size: 12px;
+            font-weight: bold;
+            color: #f39c12; /* 橙黄色标题 */
+            margin-bottom: 5px;
+            opacity: 0.9;
+        }
+        .extra-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #95a5a6;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+        .extra-row:last-child { border-bottom: none; }
+        .extra-name { color: #bdc3c7; }
+        .extra-val { color: #ecf0f1; }
+        .extra-val .highlight { color: #2ecc71; font-weight: bold; } /* 绿色高亮数值 */
+
         /* 最终结果栏 */
         .final-result { 
             margin-top: auto; padding-top: 20px; 
@@ -361,6 +392,11 @@
                     </div>
             </div>
 
+            <div id="extra-effects-box" class="extra-box hidden">
+                <div class="extra-title">🛡️ 其它生效属性 (不计入DPS)</div>
+                <div id="extra-list-content"></div>
+            </div>
+
             <div class="final-result">
                 <div class="res-card">
                     <div class="res-card-label">总秒伤 (Total)</div>
@@ -401,7 +437,7 @@
         { id: 'shangguan', name: '上官策', type: 'human', cost: 2, desc: '冰箭有{val}%概率赋予目标1层燃烧', stat: Linear(38, 50), effect: 'ice_trigger_burn' },
         { id: 'linfeng', name: '林峰', type: 'human', cost: 3, desc: '附加燃烧效果时有{val}%概率额外叠加1层燃烧，召唤冰箭时有{ice}%概率额外召唤一枚冰箭', stat: Linear(42, 60), effect: 'linfeng_dual' },
         { id: 'zuogui', name: '左归', type: 'human', cost: 4, desc: '冰箭/玄冰风暴/燃烧/脉冲造成的伤害和气血恢复效果提高{val}%', stat: Linear(28, 40), effect: 'global_dmg_mult' },
-        { id: 'qihao', name: '齐昊', type: 'human', cost: 5, desc: '召唤一只冰霜元素，向目标发射玄冰风暴，造成{val}%固定伤害，每间隔60秒仅可触发一次；每召唤一枚冰箭，冰霜元素的冷却时间缩短1秒', stat: Linear(1040, 1400), effect: 'qihao_nuke' }, // 描述更新
+        { id: 'qihao', name: '齐昊', type: 'human', cost: 5, desc: '召唤一只冰霜元素，向目标发射玄冰风暴，造成{val}%固定伤害，每间隔60秒仅可触发一次；每召唤一枚冰箭，冰霜元素的冷却时间缩短1秒', stat: Linear(1040, 1400), effect: 'qihao_nuke' },
 
         // --- 兽族 ---
         { id: 'turtle', name: '海龟', type: 'beast', cost: 1, desc: '专精提高{val}', stat: Linear(280, 400), effect: 'mastery_flat' },
@@ -412,18 +448,18 @@
         { id: 'threetail', name: '三尾妖狐', type: 'beast', cost: 4, desc: '每个激活的燃烧使自身防御力提高{val}', stat: Linear(140, 200), effect: 'none' },
         { id: 'suishou', name: '岁兽', type: 'beast', cost: 3, desc: '脉冲命中敌人时，有{val}%概率为其添加3层燃烧效果', stat: Linear(70, 100), effect: 'pulse_trigger_burn' },
         { id: 'snowbear', name: '雪地熊', type: 'beast', cost: 4, desc: '召唤冰箭时，造成的伤害额外提高{val}%，持续10秒，可多次叠加，每层效果独立计算持续时间', stat: Linear(0.38, 0.5), effect: 'snowbear_buff' },
-        { id: 'sixtail', name: '六尾魔狐', type: 'beast', cost: 5, desc: '燃烧叠加至8层以上时，触发爆燃：1.5秒后，引爆目标身上所有的燃烧效果，每引爆1层燃烧效果，对目标和目标周围的敌人造成{val}%伤害', stat: Linear(50, 68), effect: 'sixtail_explode' }, // 描述更新
+        { id: 'sixtail', name: '六尾魔狐', type: 'beast', cost: 5, desc: '燃烧叠加至8层以上时，触发爆燃：1.5秒后，引爆目标身上所有的燃烧效果，每引爆1层燃烧效果，对目标和目标周围的敌人造成{val}%伤害', stat: Linear(50, 68), effect: 'sixtail_explode' },
 
         // --- 器族 ---
         { id: 'woodsword', name: '木剑', type: 'tool', cost: 1, desc: '主属性提高{val}%', stat: Linear(0.56, 0.80), effect: 'fixed_atk' },
         { id: 'kite', name: '风筝', type: 'tool', cost: 1, desc: '调息提高{val}', stat: Linear(280, 400), effect: 'haste_flat' },
-        { id: 'fan', name: '折扇', type: 'tool', cost: 1, desc: '战斗每经过15秒，触发脉冲，对周围敌人造成{val}%伤害，为周围最多10名队友造成447治疗。承伤和输出职能造成的气血恢复效果降低50%。', stat: Linear(40, 52), effect: 'pulse_base' },
+        { id: 'fan', name: '折扇', type: 'tool', cost: 1, desc: '战斗每经过15秒，触发脉冲，对周围敌人造成{val}%伤害，为周围最多10名队友造成{heal}%治疗。', stat: Linear(40, 52), effect: 'pulse_base' },
         { id: 'banner', name: '“仙人”布幡', type: 'tool', cost: 2, desc: '每装备一张器物卡牌，物理和法术攻击力提高{val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk' },
-        { id: 'dice', name: '神木骰', type: 'tool', cost: 2, desc: '脉冲造成伤害或气血恢复效果时，在10秒内额外造成{val}伤害或837气血恢复，进入战斗时立刻触发3次脉冲。承伤和输出职能造成的气血恢复效果降低50%。', stat: Fixed(70), effect: 'dice_buff' },
+        { id: 'dice', name: '神木骰', type: 'tool', cost: 2, desc: '脉冲造成伤害或气血恢复效果时，在10秒内额外造成{val}%伤害或{heal}%气血恢复，进入战斗时立刻触发3次脉冲。', stat: Fixed(70), effect: 'dice_buff' },
         { id: 'bamboo', name: '寒冰剑', type: 'tool', cost: 3, desc: '召唤{freq}枚冰箭后，触发脉冲', stat: {v0: 16, v6: 10}, effect: 'ice_count_pulse' },
         { id: 'pearl', name: '清凉珠', type: 'tool', cost: 3, desc: '触发脉冲时，自身气血恢复效果提高{val}%，持续10秒。', stat: Linear(2.8, 4), effect: 'none' },
-        { id: 'bell', name: '合欢铃', type: 'tool', cost: 4, desc: '气血低于30%时，受到伤害立刻恢复自身63193气血，但接下来的10秒内，自身总计受到3718伤害，此效果有120秒冷却', stat: Fixed(0), effect: 'none' }, // 新增
-        { id: 'mirror', name: '六合镜', type: 'tool', cost: 5, desc: '触发脉冲时，有50%概率使自身获得回响效果，持续6秒。回响：每1秒以140%效率释放脉冲（触发4次140%伤害的脉冲），回响效果释放的脉冲无法附加脉冲造成的额外效果', stat: Linear(140, 200), effect: 'mirror_echo' },
+        { id: 'hehuanbell', name: '合欢铃', type: 'tool', cost: 4, desc: '受到伤害时，恢复{val}%攻击力的气血。接下来受到40%伤害。\n气血低于30%时，受到伤害立刻恢复自身63193气血，但接下来的10秒内，自身总计受到3718伤害，此效果有120秒冷却。', stat: Linear(680, 800), effect: 'none' },
+        { id: 'mirror', name: '六合镜', type: 'tool', cost: 5, desc: '触发脉冲时，有50%概率使自身获得回响效果，持续6秒。回响：每1秒以{val}%效率释放脉冲（触发4次{val}%伤害的脉冲），回响效果释放的脉冲无法附加脉冲造成的额外效果', stat: Linear(140, 200), effect: 'mirror_echo' },
     ];
 
     const state = {};
@@ -514,19 +550,20 @@ function calc() {
         if (isEq('woodsword')) cardAtkPct += getStatVal('woodsword');
 
         // --- 2. 核心数值计算 ---
-        const totalPct = extraPct + cardAtkPct; // 总百分比加成
-        const realBaseAtk = userInputAtk + extraFlat + cardTotalFlatAtk; // 总基础面板(含白字)
-        const finalAtk = realBaseAtk * (1 + totalPct/100); // 最终攻击力
+        const totalPct = extraPct + cardAtkPct; 
+        const realBaseAtk = userInputAtk + extraFlat + cardTotalFlatAtk; 
+        const finalAtk = realBaseAtk * (1 + totalPct/100); 
 
         // --- 3. 丹青特效参数计算 ---
         const ratios = {
             ice: getStatVal('yanhong'), burn: getStatVal('redant'), pulse: getStatVal('fan'),
             qihao: getStatVal('qihao'), foxExplode: getStatVal('sixtail'), ignite: getStatVal('twotail'),
-            mirror: getStatVal('mirror'), dice: getStatVal('dice'), suishouChance: getStatVal('suishou')
+            mirror: getStatVal('mirror'), dice: getStatVal('dice'), suishouChance: getStatVal('suishou'),
+            snowbear: getStatVal('snowbear')
         };
 
-        let globalMult = 1.0;
-        if (isEq('zuogui')) globalMult += (getStatVal('zuogui') / 100);
+        let skillMult = 1.0; 
+        if (isEq('zuogui')) skillMult += (getStatVal('zuogui') / 100);
 
         // 林峰 & 频率
         let linfengIceChance = 0, linfengBurnChance = 0;
@@ -539,6 +576,17 @@ function calc() {
         if (isEq('yanhong')) rawIceRate += (1/6);
         if (isEq('wenmin')) rawIceRate += (3 / getStatVal('wenmin'));
         let finalIceRate = rawIceRate * (1 + linfengIceChance);
+
+        // 雪地熊: 全局增伤 (独立乘区)
+        let snowbearMult = 1.0;
+        let snowbearLabel = '';
+        if (isEq('snowbear') && finalIceRate > 0) {
+            const avgStacks = finalIceRate * 10;
+            const boostPerStack = ratios.snowbear; 
+            const totalBoostPct = avgStacks * boostPerStack;
+            snowbearMult = 1 + (totalBoostPct / 100);
+            snowbearLabel = ` 雪地熊 - 全局增伤 (均${avgStacks.toFixed(1)}层)`;
+        }
 
         let pulseRate = 0;
         if (isEq('fan')) pulseRate += (1/15);
@@ -553,149 +601,161 @@ function calc() {
         let totalIgniteTriggers = (eventRedant + eventShangguan + eventSuishou) * (1 + linfengBurnChance);
         let finalStackRate = totalIgniteTriggers; 
 
-        // --- 4. 伤害计算与拆分 ---
+        // --- 4. 伤害计算 (计算满状态 TotalDPS) ---
 
-        // 4.1 六尾引爆频率修正 (1.5s 延迟机制)
+        // 4.1 六尾
         let explodeFreq = 0;
         let explodeStacks = 0; 
-
         if (isEq('sixtail') && finalStackRate > 0) {
-            // A. 叠满8层所需时间
             const timeTo8 = 8 / finalStackRate;
-            // B. 1.5秒延迟期间额外叠加的层数
             const extraStacks = finalStackRate * 1.5;
-            // C. 最终引爆层数 (上限12层)
             explodeStacks = Math.min(12, 8 + extraStacks);
-            // D. 完整循环周期
             const cycleTime = timeTo8 + 1.5;
-            // E. 最终频率
             explodeFreq = 1 / cycleTime;
         }
 
-        // 4.2 计算全状态下的各项完整DPS (Full DPS)
-        const fullSwingDps = userInputAtk > 0 ? (userBaseDps * finalAtk / userInputAtk) : 0;
+        // 4.2 全状态 DPS (含雪地熊)
+        // 最终倍率 = 技能自带倍率 * 左归 * 雪地熊
+        const finalGlobalMult = skillMult * snowbearMult;
+        
+        // 平砍 (包含雪地熊增幅)
+        let fullSwingDps = userInputAtk > 0 ? (userBaseDps * finalAtk / userInputAtk * snowbearMult) : 0;
 
         let skillBreakdown = { ice:0, pulse:0, burn:0, ignite:0, explode:0, qihao:0 };
         let fullSkillDps = 0;
 
         if (finalIceRate > 0) {
-            skillBreakdown.ice = finalAtk * (ratios.ice / 100) * globalMult * finalIceRate;
+            skillBreakdown.ice = finalAtk * (ratios.ice / 100) * finalGlobalMult * finalIceRate;
             fullSkillDps += skillBreakdown.ice;
         }
         if (pulseHitRate > 0) {
-            let val = finalAtk * ((ratios.pulse + (isEq('dice')?ratios.dice:0)) / 100) * globalMult * pulseHitRate;
-            if (isEq('mirror')) val += finalAtk * (ratios.mirror / 100) * globalMult * pulseHitRate * 0.5 * 4;
+            let val = finalAtk * ((ratios.pulse + (isEq('dice')?ratios.dice:0)) / 100) * finalGlobalMult * pulseHitRate;
+            if (isEq('mirror')) val += finalAtk * (ratios.mirror / 100) * finalGlobalMult * pulseHitRate * 0.5 * 4;
             skillBreakdown.pulse = val;
             fullSkillDps += val;
         }
         if (finalStackRate > 0) {
             let avgStacks = 12;
             let labelSuffix = '(12层)';
-            
             if (isEq('sixtail')) {
-                // 有六尾时，动态估算平均层数 (约为引爆层数的55%)
                 avgStacks = explodeStacks * 0.55; 
                 labelSuffix = `(动态均值${avgStacks.toFixed(1)}层)`;
             }
-            
-            // 燃烧DOT
-            let val = finalAtk * (ratios.burn / 100) * avgStacks * globalMult * (1/3);
+            let val = finalAtk * (ratios.burn / 100) * avgStacks * finalGlobalMult * (1/3);
             skillBreakdown.burn = val;
             fullSkillDps += val;
-            // 这里我们存一下label信息以便后续使用
             skillBreakdown._burnLabel = ' 燃烧 DOT ' + labelSuffix;
             
-            // 六尾引爆
             if (isEq('sixtail')) {
-                let exVal = finalAtk * (ratios.foxExplode / 100) * explodeStacks * globalMult * explodeFreq;
+                let exVal = finalAtk * (ratios.foxExplode / 100) * explodeStacks * finalGlobalMult * explodeFreq;
                 skillBreakdown.explode = exVal;
                 fullSkillDps += exVal;
-                skillBreakdown._explodeLabel = ` 六尾妖狐-爆燃 (每次${explodeStacks.toFixed(1)}层)`;
+                skillBreakdown._explodeLabel = ` 六尾妖狐 - 爆燃 (每次${explodeStacks.toFixed(1)}层)`;
             }
         }
         if (isEq('twotail')) {
-            let val = finalAtk * (ratios.ignite / 100) * globalMult * totalIgniteTriggers;
+            let val = finalAtk * (ratios.ignite / 100) * finalGlobalMult * totalIgniteTriggers;
             skillBreakdown.ignite = val;
             fullSkillDps += val;
         }
         if (isEq('qihao')) {
             let qFreq = 1 / (60 / (1 + finalIceRate));
-            let val = finalAtk * (ratios.qihao / 100) * globalMult * qFreq;
+            let val = finalAtk * (ratios.qihao / 100) * finalGlobalMult * qFreq;
             skillBreakdown.qihao = val;
             fullSkillDps += val;
         }
 
-        const totalDps = fullSwingDps + fullSkillDps;
+        let currentTotalDps = fullSwingDps + fullSkillDps; // 这是最终显示的 TotalDPS
 
-        // 4.3 计算归属比例
-        // 丹青白字贡献比例
-        const flatRatio = finalAtk > 0 ? (cardTotalFlatAtk * (1 + totalPct/100) / finalAtk) : 0;
+        // --- 5. 伤害拆解 (剥洋葱法) ---
+        // 顺序：总伤 -> 剥离雪地熊 -> 剥离白字 -> 剥离百分比 -> 剩余为基础+技能
 
-        // --- 5. 组装 Breakdown 数据 ---
-        let breakdownList = [];
-
-        // 准备数值
+        let val_snowbear = 0;
         let val_flat = 0;
         let val_buff = 0;
         let val_base = 0;
+
+        // 步骤 A: 剥离雪地熊 (Global)
+        if (snowbearMult > 1.0) {
+            // 雪地熊贡献 = 总伤 - (总伤 / 倍率)
+            val_snowbear = currentTotalDps * (1 - 1/snowbearMult);
+            
+            // 将所有组件还原到 "无雪地熊" 状态，以便继续拆解
+            fullSwingDps /= snowbearMult;
+            for (let k in skillBreakdown) {
+                if(!k.startsWith('_')) skillBreakdown[k] /= snowbearMult;
+            }
+            // 此时 fullSwingDps 和 skillBreakdown 都是未被雪地熊放大的
+        }
+
+        // 临时总伤 (无雪地熊)
+        let dpsWithoutSnow = currentTotalDps - val_snowbear;
+
+        // 步骤 B: 剥离白字 (Flat)
+        // 只有当 flatAtk 存在且勾选显示时才剥离
+        const flatRatio = finalAtk > 0 ? (cardTotalFlatAtk * (1 + totalPct/100) / finalAtk) : 0;
         
-        // 步骤 A: 计算 "攻击力百分比收益" (Buff)
+        if (showFlatBreakdown && flatRatio > 0) {
+            // 白字贡献 = (无雪地熊的总伤) * 占比
+            val_flat = dpsWithoutSnow * flatRatio;
+
+            // 将组件还原到 "无白字" 状态
+            fullSwingDps *= (1 - flatRatio);
+            for (let k in skillBreakdown) {
+                if(!k.startsWith('_')) skillBreakdown[k] *= (1 - flatRatio);
+            }
+        }
+
+        // 步骤 C: 剥离攻击百分比 (Buff) - 仅针对平砍
+        // 此时 fullSwingDps 已经是 (Base + PctBuff) 的状态 (不含白字、不含雪地熊)
+        // Buff收益 = 当前Swing - (当前Swing / (1+总Pct) * (1+外Pct))
         if (cardAtkPct > 0) {
             val_buff = fullSwingDps * (1 - (1 + extraPct/100)/(1 + totalPct/100));
-        } else {
-            val_buff = 0;
         }
 
-        // 步骤 B: 计算 "平砍(Base)"
+        // 步骤 D: 剩余的即为基础 (Base)
         val_base = fullSwingDps - val_buff;
 
-        // 步骤 C: 处理 "丹青白字 (Flat)" 的剥离
-        if (showFlatBreakdown && flatRatio > 0) {
-            val_flat = totalDps * flatRatio;
+        // --- 6. 组装 Breakdown 列表 ---
+        let breakdownList = [];
 
-            // 扣除白字占比
-            val_base *= (1 - flatRatio);
-            val_buff *= (1 - flatRatio);
-            
-            for (let k in skillBreakdown) {
-                if(k.startsWith('_')) continue; // 跳过label字段
-                skillBreakdown[k] *= (1 - flatRatio);
-            }
-        } else {
-            val_flat = 0;
-        }
-
-        // 组装列表
+        // 基础
         breakdownList.push({ id:'base', label: useDilution?' 玩家固有 (含稀释)':' 玩家固有伤害', val: val_base, freq:0 });
         
+        // 攻击Buff
         if (cardAtkPct > 0 || val_buff > 1) { 
             breakdownList.push({ id:'buff', label:' 攻击力百分比收益', val: val_buff, freq:0 });
         }
 
+        // 白字
         if (showFlatBreakdown) {
             breakdownList.push({ id:'flat', label:' 丹青白字核心提升', val: val_flat, freq:0 });
         }
 
-        // 技能行
+        // 技能 (已经是剥离后的纯数值)
         if(skillBreakdown.ice > 0) breakdownList.push({ id:'ice', label:' 冰箭', val: skillBreakdown.ice, freq: finalIceRate });
         if(skillBreakdown.pulse > 0) breakdownList.push({ id:'pulse', label:' 脉冲', val: skillBreakdown.pulse, freq: pulseHitRate });
         if(skillBreakdown.burn > 0) breakdownList.push({ id:'burn', label: skillBreakdown._burnLabel, val: skillBreakdown.burn, freq: 0.3333 });
-        if(skillBreakdown.ignite > 0) breakdownList.push({ id:'ignite', label:' 二尾妖狐-引燃', val: skillBreakdown.ignite, freq: totalIgniteTriggers });
+        if(skillBreakdown.ignite > 0) breakdownList.push({ id:'ignite', label:' 二尾妖狐 - 引燃', val: skillBreakdown.ignite, freq: totalIgniteTriggers });
         if(skillBreakdown.explode > 0) breakdownList.push({ id:'explode', label: skillBreakdown._explodeLabel, val: skillBreakdown.explode, freq: explodeFreq });
-        if(skillBreakdown.qihao > 0) breakdownList.push({ id:'qihao', label:' 齐昊-玄冰风暴', val: skillBreakdown.qihao, freq: 1/(60/(1+finalIceRate)) });
+        if(skillBreakdown.qihao > 0) breakdownList.push({ id:'qihao', label:' 齐昊 - 玄冰风暴', val: skillBreakdown.qihao, freq: 1/(60/(1+finalIceRate)) });
 
+        // 雪地熊 (最后加入列表)
+        if (val_snowbear > 0) {
+            breakdownList.push({ id:'snowbear', label: snowbearLabel, val: val_snowbear, freq: 0 });
+        }
 
-        // --- 6. 渲染 UI ---
+        // --- 7. 渲染 UI ---
         const baselineDps = userInputAtk > 0 ? (userBaseDps * (userInputAtk+extraFlat)/userInputAtk * (1+extraPct/100)) : 0;
-        const cardSystemDps = totalDps - baselineDps;
+        const cardSystemDps = currentTotalDps - baselineDps;
 
         document.getElementById('currCost').innerText = costSum;
         document.getElementById('res-flatAtk').innerText = Math.round(cardTotalFlatAtk);
         document.getElementById('res-finalAtk').innerText = Math.round(finalAtk);
-        document.getElementById('res-totalDps').innerText = Math.round(totalDps).toLocaleString();
+        document.getElementById('res-totalDps').innerText = Math.round(currentTotalDps).toLocaleString();
         document.getElementById('res-cardSystemDps').innerText = Math.round(cardSystemDps).toLocaleString();
 
-        const inc = baselineDps > 0 ? ((totalDps - baselineDps)/baselineDps * 100) : 0;
+        const inc = baselineDps > 0 ? ((currentTotalDps - baselineDps)/baselineDps * 100) : 0;
         document.getElementById('res-percent').innerText = `+${inc.toFixed(1)}%`;
 
         // 列表排序与HTML生成
@@ -711,18 +771,20 @@ function calc() {
 
         let html = sortedList.map(obj => {
             if (obj.val <= 0 && obj.freq <= 0 && obj.id !== 'base') return '';
-            const pct = totalDps > 0 ? (obj.val / totalDps * 100).toFixed(1) : '0.0';
+            const pct = currentTotalDps > 0 ? (obj.val / currentTotalDps * 100).toFixed(1) : '0.0';
             const freqStr = obj.freq > 0 ? fmtFreq(obj.freq) : '-';
             
-            let color = '#fff'; // 默认为白色 (修复Base为灰色的问题)
+            let color = '#fff'; 
             if(obj.id==='ice') color='#3498db'; 
             if(obj.id==='burn') color='#e74c3c';
             if(obj.id==='pulse') color='#2ecc71'; 
             if(obj.id==='ignite') color='#d35400';
             if(obj.id==='explode') color='#e67e22'; 
             if(obj.id==='qihao') color='#9b59b6';
-            if(obj.id==='buff') color='#7f8c8d'; // 仅Buff为灰色
+            if(obj.id==='buff') color='#7f8c8d'; 
             if(obj.id==='flat') color='#00d2d3'; 
+            // 给雪地熊一个独特的颜色 (浅粉红)
+            if(obj.id==='snowbear') color='#ff9ff3';
 
             return `
             <div class="breakdown-row">
@@ -737,8 +799,69 @@ function calc() {
         
         const arrow = document.getElementById('sort-arrow');
         arrow.innerText = dpsSortDir === 'desc' ? '▼' : '▲';
-        arrow.style.color = '#fff'; // 修复箭头为白色
+        arrow.style.color = '#fff'; 
+
+        updateExtraEffects();
     }
+
+    function updateExtraEffects() {
+        const container = document.getElementById('extra-effects-box');
+        const content = document.getElementById('extra-list-content');
+        let html = '';
+        
+        // 辅助格式化
+        const fmt = (n) => parseFloat(n.toFixed(2));
+
+        // 定义哪些卡牌有额外效果，以及如何显示
+        const handlers = {
+            // 纯面板属性
+            'xiaohuan': (val) => `会心等级 +<span class="highlight">${fmt(val)}</span>`,
+            'wilddog': (val) => `化伤与秽灭 +<span class="highlight">${fmt(val)}</span>`,
+            'turtle': (val) => `专精等级 +<span class="highlight">${fmt(val)}</span>`,
+            'kite': (val) => `调息等级 +<span class="highlight">${fmt(val)}</span>`,
+            
+            // 防御/生存类
+            'threetail': (val) => `每层燃烧提供防御 +<span class="highlight">${fmt(val)}</span>`,
+            'ghostdog': (val) => `受击引燃 (内置冷却 <span class="highlight">${fmt(val)}</span> 秒)`,
+            'pearl': (val) => `脉冲使气血恢复提高 <span class="highlight">${fmt(val)}%</span>`,
+            'hehuanbell': (val) => `受击回复 <span class="highlight">${fmt(val)}%</span> 攻击力的气血`,
+            
+            // 混合类（既有伤害也有治疗/其他）
+            'zuogui': (val) => `气血恢复效果提高 <span class="highlight">${fmt(val)}%</span>`,
+            'fan': (val, lv) => {
+                const heal = 4.8 + (1.2 * lv / 6);
+                return `脉冲治疗队友 <span class="highlight">${fmt(heal)}%</span>`;
+            },
+            'dice': (val, lv) => {
+                const heal = 9.0 + (3.0 * lv / 6);
+                return `脉冲额外气血恢复 <span class="highlight">${fmt(heal)}%</span>`;
+            }
+        };
+
+        DB.forEach(c => {
+            if (isEq(c.id) && handlers[c.id]) {
+                const val = getStatVal(c.id);
+                const lv = state[c.id].level;
+                const text = handlers[c.id](val, lv);
+                
+                html += `
+                <div class="extra-row">
+                    <span class="extra-name">● ${c.name}</span>
+                    <span class="extra-val">${text}</span>
+                </div>`;
+            }
+        });
+
+        content.innerHTML = html;
+
+        // 如果没有内容，隐藏整个盒子
+        if (html === '') {
+            container.classList.add('hidden');
+        } else {
+            container.classList.remove('hidden');
+        }
+    }
+
     // ==========================================
     // 3. 界面交互
     // ==========================================
@@ -870,16 +993,51 @@ function renderList() {
         
         const c = DB.find(x => x.id === id);
         let val = getStatVal(id);
+        const lv = state[id].level;
         
-        // 格式化辅助函数：保留2位精度，但去除末尾无用的0
+        // 格式化辅助函数
         const fmt = (n) => parseFloat(n.toFixed(2));
         
         let desc = c.desc;
+
+        // --- 特殊卡牌描述处理 ---
         if (id === 'linfeng') {
-            const iceChance = 70 + ((100-70)/6 * state[id].level);
+            const iceChance = 70 + ((100-70)/6 * lv);
             desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`)
                         .replace('{ice}', `<span class="highlight">${fmt(iceChance)}</span>`);
-        } else {
+        } 
+        else if (id === 'fan') { // 折扇
+            const healVal = 4.8 + (1.2 * lv / 6);
+            desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`)
+                       .replace('{heal}', `<span class="highlight">${fmt(healVal)}</span>`);
+        }
+        else if (id === 'dice') { // 神木骰
+            const healVal = 9.0 + (3.0 * lv / 6);
+            desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`)
+                       .replace('{heal}', `<span class="highlight">${fmt(healVal)}</span>`);
+        }
+        else if (id === 'snowbear') { // 雪地熊
+            let linfengIceChance = 0;
+            if (state['linfeng'] && state['linfeng'].equipped) {
+                linfengIceChance = 0.7 + ((1.0 - 0.7)/6 * state['linfeng'].level);
+            }
+            let rawIceRate = 0; 
+            if (state['yanhong'].equipped) rawIceRate += (1/6);
+            if (state['wenmin'].equipped) {
+                const wmVal = 16 + (10 - 16) * (state['wenmin'].level / 6);
+                rawIceRate += (3 / wmVal);
+            }
+            let rate = rawIceRate * (1 + linfengIceChance);
+            let avgStacks = rate * 10; 
+            
+            desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`)
+                       .replace('{avgStacks}', `<span class="highlight">${fmt(avgStacks)}</span>`);
+        }
+        else if (id === 'hehuanbell') { // 【新增】合欢铃
+            // 直接显示 stat 里的百分比数值 (680~800)
+            desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`);
+        }
+        else {
             const displayVal = fmt(val);
             desc = desc.replace('{val}', `<span class="highlight">${displayVal}</span>`)
                         .replace('{freq}', `<span class="highlight">${displayVal}</span>`);
