@@ -244,14 +244,13 @@
         .sort-arrow { font-size: 10px; opacity: 0.5; }
 
         /* =========================================
-           移动端适配 (响应式布局)
-           当屏幕宽度小于 1024px 时生效
+           移动端适配 (响应式布局) - 最终修正版
            ========================================= */
         @media screen and (max-width: 1024px) {
             body {
                 height: auto;
                 overflow-y: auto; 
-                -webkit-overflow-scrolling: touch;
+                -webkit-overflow-scrolling: touch; /* 顺滑滚动 */
             }
 
             .layout {
@@ -259,12 +258,13 @@
                 height: auto;
             }
 
-            /* --- 左侧面板适配 --- */
+            /* --- 左侧面板 --- */
             .card-list-panel {
                 flex: none;
                 width: 100%;
-                height: auto;
-                max-height: none; /* 取消最大高度限制，由 scroll-area 控制 */
+                /* 这里设为 auto，高度由内部的 scroll-area 撑开 */
+                height: auto; 
+                max-height: none; 
                 margin-bottom: 20px;
             }
 
@@ -276,37 +276,31 @@
                 padding: 15px;
             }
 
-            .header-left-group {
-                width: 100%;
-                justify-content: space-between;
-            }
+            .header-left-group { width: 100%; justify-content: space-between; }
+            .header-btn-group { width: 100%; display: flex; gap: 10px; }
+            .ctrl-btn, .clear-btn { flex: 1; text-align: center; padding: 8px 0; }
 
-            .header-btn-group {
-                width: 100%;
-                display: flex;
-                gap: 10px;
-            }
-            
-            .ctrl-btn, .clear-btn {
-                flex: 1; 
-                text-align: center;
-                padding: 8px 0;
-            }
-
-            /* 【关键修改 1】卡牌列表：2列 x 5行 */
+            /* 【关键修正】卡牌列表容器 */
             .scroll-area {
-                /* 卡牌高度约74px + 间距12px ≈ 86px/行 */
-                /* 5行 ≈ 250px */
-                height: 250px; 
-                overflow-y: auto;
+                /* 1. 强制取消 flex 自适应，否则 height 不生效 */
+                flex: none !important;
+                
+                /* 2. 设定固定高度：卡片72+间距12=84，84*5=420，加padding凑450 */
+                height: 450px !important; 
+                
+                /* 3. 强制开启 Y 轴滚动 */
+                overflow-y: auto !important;
+                
+                /* 4. 两列布局 */
                 grid-template-columns: repeat(2, 1fr); 
+                
+                /* 视觉优化：给个边框让人知道这里能滑 */
+                border-top: 1px solid #eee;
+                border-bottom: 1px solid #eee;
             }
 
-            /* --- 右侧面板适配 --- */
-            .right-panel {
-                width: 100%;
-                flex: none;
-            }
+            /* --- 右侧面板 --- */
+            .right-panel { width: 100%; flex: none; }
 
             .unified-row {
                 flex-direction: column;
@@ -314,28 +308,17 @@
                 padding: 15px;
             }
 
-            /* 【关键修改 2】左侧输入组：允许换行，变成2x2网格 */
+            /* 输入框 2x2 排列 */
             .left-group {
                 width: 100%;
                 justify-content: space-between;
                 border-left: none;
                 padding-left: 0;
-                
-                /* 开启换行 */
                 flex-wrap: wrap; 
-                gap: 10px; /* 上下行的间距 */
+                gap: 10px; 
             }
-
-            /* 让每个输入框占一半不到的宽度，这样一行刚好放2个 */
-            .inp-item {
-                width: 48%; 
-            }
-            
-            /* 让输入框填满它的容器 */
-            .inp-item input {
-                width: 100%;
-                box-sizing: border-box; /* 防止padding撑破宽度 */
-            }
+            .inp-item { width: 48%; }
+            .inp-item input { width: 100%; box-sizing: border-box; }
             
             .right-group {
                 width: 100%;
@@ -344,20 +327,11 @@
                 padding-top: 15px;
             }
 
-            .final-result {
-                grid-template-columns: 1fr; 
-                gap: 10px;
-            }
-            
+            .final-result { grid-template-columns: 1fr; gap: 10px; }
             .stat-val { font-size: 18px; }
             .card-item { height: auto; padding: 10px; }
-            
-            .footer-info {
-                margin-bottom: 30px;
-            }
-            .copyright {
-                gap: 5px;
-            }
+            .footer-info { margin-bottom: 30px; }
+            .copyright { gap: 5px; }
         }
         
     </style>
