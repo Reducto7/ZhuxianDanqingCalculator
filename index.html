@@ -583,7 +583,7 @@
 
 
 
-    // 【新增】全局变量，用于存储当前计算出的最终面板攻击力，供详情页显示具体数值使用
+    // 全局变量 (保持不变)
     let g_finalAtk = 0;
 
     function calc() {
@@ -617,7 +617,7 @@
             }
         });
 
-        // 丹青提供的攻击力百分比 (CardPct)
+        // 丹青提供的攻击力百分比
         let cardAtkPct = 0;
         if (isEq('zhou')) cardAtkPct += getStatVal('zhou') * countHuman;
         if (isEq('tiger')) cardAtkPct += getStatVal('tiger') * countBeast;
@@ -626,10 +626,10 @@
 
         // --- 2. 核心数值计算 ---
         const totalPct = extraPct + cardAtkPct; 
-        const realBaseAtk = userInputAtk + extraFlat + cardTotalFlatAtk; // 总基础面板(含白字)
+        const realBaseAtk = userInputAtk + extraFlat + cardTotalFlatAtk; 
         const finalAtk = realBaseAtk * (1 + totalPct/100); 
 
-        // 【更新全局变量】
+        // 更新全局变量
         g_finalAtk = finalAtk;
 
         // --- 3. 丹青特效参数计算 ---
@@ -640,8 +640,9 @@
             snowbear: getStatVal('snowbear')
         };
 
-        let skillMult = 1.0; 
-        if (isEq('zuogui')) skillMult += (getStatVal('zuogui') / 100);
+        // 【修正】左归不再是全局技能增伤，而是特定增伤
+        let zuoguiMult = 1.0; 
+        if (isEq('zuogui')) zuoguiMult += (getStatVal('zuogui') / 100);
 
         // 林峰 & 频率
         let linfengIceChance = 0, linfengBurnChance = 0;
@@ -655,7 +656,7 @@
         if (isEq('wenmin')) rawIceRate += (3 / getStatVal('wenmin'));
         let finalIceRate = rawIceRate * (1 + linfengIceChance);
 
-        // 雪地熊: 全局增伤
+        // 雪地熊: 全局增伤 (影响所有伤害)
         let snowbearMult = 1.0;
         let snowbearLabel = '';
         if (isEq('snowbear') && finalIceRate > 0) {
@@ -690,22 +691,31 @@
             explodeFreq = 1 / cycleTime;
         }
 
-        const finalGlobalMult = skillMult * snowbearMult;
+        // 平砍：只享受雪地熊，不享受左归
         let fullSwingDps = userInputAtk > 0 ? (userBaseDps * finalAtk / userInputAtk * snowbearMult) : 0;
 
         let skillBreakdown = { ice:0, pulse:0, burn:0, ignite:0, explode:0, qihao:0 };
         let fullSkillDps = 0;
 
+        // 【修正】伤害计算逻辑：
+        // 1. 雪地熊 (snowbearMult) -> 全局生效
+        // 2. 左归 (zuoguiMult) -> 只对 冰、脉、燃、玄冰 生效
+        
+        // 冰箭 (享受左归)
         if (finalIceRate > 0) {
-            skillBreakdown.ice = finalAtk * (ratios.ice / 100) * finalGlobalMult * finalIceRate;
+            skillBreakdown.ice = finalAtk * (ratios.ice / 100) * snowbearMult * zuoguiMult * finalIceRate;
             fullSkillDps += skillBreakdown.ice;
         }
+        
+        // 脉冲 (享受左归)
         if (pulseHitRate > 0) {
-            let val = finalAtk * ((ratios.pulse + (isEq('dice')?ratios.dice:0)) / 100) * finalGlobalMult * pulseHitRate;
-            if (isEq('mirror')) val += finalAtk * (ratios.mirror / 100) * finalGlobalMult * pulseHitRate * 0.5 * 4;
+            let val = finalAtk * ((ratios.pulse + (isEq('dice')?ratios.dice:0)) / 100) * snowbearMult * zuoguiMult * pulseHitRate;
+            if (isEq('mirror')) val += finalAtk * (ratios.mirror / 100) * snowbearMult * zuoguiMult * pulseHitRate * 0.5 * 4;
             skillBreakdown.pulse = val;
             fullSkillDps += val;
         }
+        
+        // 燃烧DOT (享受左归)
         if (finalStackRate > 0) {
             let avgStacks = 12;
             let labelSuffix = '(12层)';
@@ -713,38 +723,44 @@
                 avgStacks = explodeStacks * 0.55; 
                 labelSuffix = `(动态均值${avgStacks.toFixed(1)}层)`;
             }
-            let val = finalAtk * (ratios.burn / 100) * avgStacks * finalGlobalMult * (1/3);
+            let val = finalAtk * (ratios.burn / 100) * avgStacks * snowbearMult * zuoguiMult * (1/3);
             skillBreakdown.burn = val;
             fullSkillDps += val;
             skillBreakdown._burnLabel = ' 燃烧 DOT ' + labelSuffix;
             
+            // 爆燃 (六尾) -> 【不】享受左归
             if (isEq('sixtail')) {
-                let exVal = finalAtk * (ratios.foxExplode / 100) * explodeStacks * finalGlobalMult * explodeFreq;
+                let exVal = finalAtk * (ratios.foxExplode / 100) * explodeStacks * snowbearMult * explodeFreq;
                 skillBreakdown.explode = exVal;
                 fullSkillDps += exVal;
                 skillBreakdown._explodeLabel = ` 六尾妖狐-爆燃 (每次${explodeStacks.toFixed(1)}层)`;
             }
         }
+        
+        // 引燃 (二尾) -> 【不】享受左归
         if (isEq('twotail')) {
-            let val = finalAtk * (ratios.ignite / 100) * finalGlobalMult * totalIgniteTriggers;
+            let val = finalAtk * (ratios.ignite / 100) * snowbearMult * totalIgniteTriggers;
             skillBreakdown.ignite = val;
             fullSkillDps += val;
         }
+        
+        // 玄冰风暴 (齐昊) -> 享受左归
         if (isEq('qihao')) {
             let qFreq = 1 / (60 / (1 + finalIceRate));
-            let val = finalAtk * (ratios.qihao / 100) * finalGlobalMult * qFreq;
+            let val = finalAtk * (ratios.qihao / 100) * snowbearMult * zuoguiMult * qFreq;
             skillBreakdown.qihao = val;
             fullSkillDps += val;
         }
 
         let currentTotalDps = fullSwingDps + fullSkillDps; 
 
-        // --- 5. 伤害拆解 ---
+        // --- 5. 伤害拆解 (Peeling) ---
         let val_snowbear = 0;
         let val_flat = 0;
         let val_buff = 0;
         let val_base = 0;
 
+        // 步骤 A: 剥离雪地熊 (Global)
         if (snowbearMult > 1.0) {
             val_snowbear = currentTotalDps * (1 - 1/snowbearMult);
             fullSwingDps /= snowbearMult;
@@ -754,6 +770,7 @@
         }
         let dpsWithoutSnow = currentTotalDps - val_snowbear;
 
+        // 步骤 B: 剥离白字 (Flat)
         const flatRatio = finalAtk > 0 ? (cardTotalFlatAtk * (1 + totalPct/100) / finalAtk) : 0;
         if (showFlatBreakdown && flatRatio > 0) {
             val_flat = dpsWithoutSnow * flatRatio;
@@ -763,13 +780,11 @@
             }
         }
 
-        // 计算攻击力百分比收益
+        // 步骤 C: 剥离攻击百分比
         let buffLabel = ' 攻击力百分比收益';
         if (cardAtkPct > 0) {
             val_buff = fullSwingDps * (1 - (1 + extraPct/100)/(1 + totalPct/100));
             
-            // 【新增逻辑】计算具体的攻击力提升数值
-            // 基础(含白字) * (丹青百分比 / 100)
             const absAtkGain = realBaseAtk * (cardAtkPct / 100);
             buffLabel = ` 攻击力百分比收益 (↑${cardAtkPct.toFixed(1)}% / <span style="color:#f1c40f">+${Math.round(absAtkGain)}</span>)`;
         }
@@ -859,7 +874,8 @@
         updateExtraEffects(finalAtk);
     }
 
-    
+
+
     function updateExtraEffects(currentAtk = 0) {
         const container = document.getElementById('extra-effects-box');
         const content = document.getElementById('extra-list-content');
