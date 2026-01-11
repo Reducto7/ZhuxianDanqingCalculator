@@ -196,6 +196,34 @@
         .extra-val { color: #ecf0f1; }
         .extra-val .highlight { color: #2ecc71; font-weight: bold; } /* 绿色高亮数值 */
 
+        .footer-info {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255,255,255,0.05); /* 极淡的分割线 */
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .copyright {
+            font-size: 12px;
+            color: #7f8c8d;
+            font-family: Consolas, Monaco, monospace; /*用代码字体显得比较极客*/
+        }
+
+        .visit-stats {
+            font-size: 10px; /* 字体非常小，不突兀 */
+            color: #555;     /* 颜色很暗，只有仔细看才看得到 */
+        }
+        
+        /* 移动端适配修正：防止页脚被挤出去 */
+        @media screen and (max-width: 1024px) {
+            .footer-info {
+                margin-bottom: 30px; /* 手机上给底部留点空间 */
+            }
+        }
+
         /* 最终结果栏 */
         .final-result { 
             margin-top: auto; padding-top: 20px; 
@@ -221,40 +249,68 @@
            ========================================= */
         @media screen and (max-width: 1024px) {
             body {
-                /* 取消固定高度，允许页面在手机上上下滚动 */
                 height: auto;
                 overflow-y: auto; 
                 -webkit-overflow-scrolling: touch;
             }
 
             .layout {
-                /* 关键：从左右排列(row)改为上下排列(column) */
                 flex-direction: column;
                 height: auto;
             }
 
-            /* 左侧面板适配 */
+            /* --- 左侧面板适配 --- */
             .card-list-panel {
-                flex: none; /* 取消固定宽度限制 */
-                width: 100%; /* 占满屏幕宽度 */
+                flex: none;
+                width: 100%;
                 height: auto;
-                max-height: 500px; /* 给列表一个最大高度，防止太长 */
-                margin-bottom: 20px; /* 与下方内容保持间距 */
+                max-height: 600px; /* 稍微给高一点，方便浏览 */
+                margin-bottom: 20px;
             }
 
+            /* 【关键修改 1】头部改为两行显示 */
+            .list-header {
+                flex-direction: column; /* 上下排列 */
+                align-items: stretch;   /* 宽度拉伸填满 */
+                gap: 12px;              /* 两行之间的间距 */
+                height: auto;           /* 取消高度限制 */
+                padding: 15px;
+            }
+
+            /* 第一行：标题 + 六个圈 */
+            .header-left-group {
+                width: 100%;
+                justify-content: space-between; /* 两端对齐 */
+            }
+
+            /* 第二行：三个按钮 */
+            .header-btn-group {
+                width: 100%;
+                display: flex;
+                gap: 10px;
+            }
+            
+            /* 让按钮平分宽度，按起来更舒服 */
+            .ctrl-btn, .clear-btn {
+                flex: 1; 
+                text-align: center;
+                padding: 8px 0;
+            }
+
+            /* 【关键修改 2】卡牌列表改为两列 */
             .scroll-area {
-                /* 手机上保持列表内部滚动，但不占满全屏 */
                 height: 300px; 
                 overflow-y: auto;
+                /* 从 3列 改为 2列 */
+                grid-template-columns: repeat(2, 1fr); 
             }
 
-            /* 右侧面板适配 */
+            /* --- 右侧面板适配 --- */
             .right-panel {
                 width: 100%;
                 flex: none;
             }
 
-            /* 控制区适配：变成多行显示，防止挤压 */
             .unified-row {
                 flex-direction: column;
                 gap: 15px;
@@ -264,24 +320,30 @@
             .left-group, .right-group {
                 width: 100%;
                 justify-content: space-between;
-                border-left: none; /* 去掉原本的分割线 */
+                border-left: none;
                 padding-left: 0;
             }
             
             .right-group {
-                border-top: 1px solid rgba(255,255,255,0.1); /* 改为上方分割线 */
+                border-top: 1px solid rgba(255,255,255,0.1);
                 padding-top: 15px;
             }
 
-            /* 底部结果卡片适配：手机上一行显示一个或两个 */
             .final-result {
-                grid-template-columns: 1fr; /* 一行一个 */
+                grid-template-columns: 1fr; 
                 gap: 10px;
             }
             
-            /* 调整字体大小，防止手机上字太大撑破布局 */
             .stat-val { font-size: 18px; }
-            .card-item { height: auto; padding: 10px; } /* 卡片高度自适应 */
+            .card-item { height: auto; padding: 10px; }
+            
+            /* 底部页脚防拥挤 */
+            .footer-info {
+                margin-bottom: 30px;
+            }
+            .copyright {
+                gap: 5px;
+            }
         }
         
     </style>
@@ -343,7 +405,7 @@
                         
                         <div class="inp-item hidden" id="dilution-pct-box">
                             <label style="color:#e67e22">其他攻击(%)</label>
-                            <input type="number" id="extraPct" value="3" oninput="calc()" style="border-color:#e67e22">
+                            <input type="number" id="extraPct" value="4" oninput="calc()" style="border-color:#e67e22">
                         </div>
                         <div class="inp-item hidden" id="dilution-flat-box">
                             <label style="color:#e67e22">其他白字</label>
@@ -413,6 +475,24 @@
                     <div class="res-card-val c-inc" id="res-percent">+0.0%</div>
                 </div>
             </div>
+
+            <div class="footer-info">
+                <div class="copyright">
+                    <span class="credit-item">制作: <span class="author">鱼夕@一剑诛仙</span></span>
+                    <span class="divider">|</span>
+                    <span class="credit-item">数据: <span class="author">逍遥子@星河入梦</span></span>
+                </div>
+                
+                <div class="visit-stats">
+                    <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+                    <span id="busuanzi_container_site_pv" style="display:none"> 
+                        Total Views: <span id="busuanzi_value_site_pv" style="color:#2ecc71"></span>
+                        <span style="margin:0 5px; opacity:0.3">|</span>
+                        Visitors: <span id="busuanzi_value_site_uv" style="color:#3498db"></span>
+                    </span>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -511,7 +591,12 @@
         calc();
     }
 
-function calc() {
+
+
+    // 【新增】全局变量，用于存储当前计算出的最终面板攻击力，供详情页显示具体数值使用
+    let g_finalAtk = 0;
+
+    function calc() {
         // --- 0. 基础输入与选项读取 ---
         const userInputAtk = parseFloat(document.getElementById('baseAtk').value) || 0;
         const userBaseDps = parseFloat(document.getElementById('baseDps').value) || 0;
@@ -551,8 +636,11 @@ function calc() {
 
         // --- 2. 核心数值计算 ---
         const totalPct = extraPct + cardAtkPct; 
-        const realBaseAtk = userInputAtk + extraFlat + cardTotalFlatAtk; 
+        const realBaseAtk = userInputAtk + extraFlat + cardTotalFlatAtk; // 总基础面板(含白字)
         const finalAtk = realBaseAtk * (1 + totalPct/100); 
+
+        // 【更新全局变量】
+        g_finalAtk = finalAtk;
 
         // --- 3. 丹青特效参数计算 ---
         const ratios = {
@@ -577,7 +665,7 @@ function calc() {
         if (isEq('wenmin')) rawIceRate += (3 / getStatVal('wenmin'));
         let finalIceRate = rawIceRate * (1 + linfengIceChance);
 
-        // 雪地熊: 全局增伤 (独立乘区)
+        // 雪地熊: 全局增伤
         let snowbearMult = 1.0;
         let snowbearLabel = '';
         if (isEq('snowbear') && finalIceRate > 0) {
@@ -585,7 +673,7 @@ function calc() {
             const boostPerStack = ratios.snowbear; 
             const totalBoostPct = avgStacks * boostPerStack;
             snowbearMult = 1 + (totalBoostPct / 100);
-            snowbearLabel = ` 雪地熊 - 全局增伤 (均${avgStacks.toFixed(1)}层)`;
+            snowbearLabel = ` 雪地熊全局增伤 (均${avgStacks.toFixed(1)}层)`;
         }
 
         let pulseRate = 0;
@@ -601,9 +689,7 @@ function calc() {
         let totalIgniteTriggers = (eventRedant + eventShangguan + eventSuishou) * (1 + linfengBurnChance);
         let finalStackRate = totalIgniteTriggers; 
 
-        // --- 4. 伤害计算 (计算满状态 TotalDPS) ---
-
-        // 4.1 六尾
+        // --- 4. 伤害计算 ---
         let explodeFreq = 0;
         let explodeStacks = 0; 
         if (isEq('sixtail') && finalStackRate > 0) {
@@ -614,11 +700,7 @@ function calc() {
             explodeFreq = 1 / cycleTime;
         }
 
-        // 4.2 全状态 DPS (含雪地熊)
-        // 最终倍率 = 技能自带倍率 * 左归 * 雪地熊
         const finalGlobalMult = skillMult * snowbearMult;
-        
-        // 平砍 (包含雪地熊增幅)
         let fullSwingDps = userInputAtk > 0 ? (userBaseDps * finalAtk / userInputAtk * snowbearMult) : 0;
 
         let skillBreakdown = { ice:0, pulse:0, burn:0, ignite:0, explode:0, qihao:0 };
@@ -650,7 +732,7 @@ function calc() {
                 let exVal = finalAtk * (ratios.foxExplode / 100) * explodeStacks * finalGlobalMult * explodeFreq;
                 skillBreakdown.explode = exVal;
                 fullSkillDps += exVal;
-                skillBreakdown._explodeLabel = ` 六尾妖狐 - 爆燃 (每次${explodeStacks.toFixed(1)}层)`;
+                skillBreakdown._explodeLabel = ` 六尾妖狐-爆燃 (每次${explodeStacks.toFixed(1)}层)`;
             }
         }
         if (isEq('twotail')) {
@@ -665,82 +747,67 @@ function calc() {
             fullSkillDps += val;
         }
 
-        let currentTotalDps = fullSwingDps + fullSkillDps; // 这是最终显示的 TotalDPS
+        let currentTotalDps = fullSwingDps + fullSkillDps; 
 
-        // --- 5. 伤害拆解 (剥洋葱法) ---
-        // 顺序：总伤 -> 剥离雪地熊 -> 剥离白字 -> 剥离百分比 -> 剩余为基础+技能
-
+        // --- 5. 伤害拆解 ---
         let val_snowbear = 0;
         let val_flat = 0;
         let val_buff = 0;
         let val_base = 0;
 
-        // 步骤 A: 剥离雪地熊 (Global)
         if (snowbearMult > 1.0) {
-            // 雪地熊贡献 = 总伤 - (总伤 / 倍率)
             val_snowbear = currentTotalDps * (1 - 1/snowbearMult);
-            
-            // 将所有组件还原到 "无雪地熊" 状态，以便继续拆解
             fullSwingDps /= snowbearMult;
             for (let k in skillBreakdown) {
                 if(!k.startsWith('_')) skillBreakdown[k] /= snowbearMult;
             }
-            // 此时 fullSwingDps 和 skillBreakdown 都是未被雪地熊放大的
         }
-
-        // 临时总伤 (无雪地熊)
         let dpsWithoutSnow = currentTotalDps - val_snowbear;
 
-        // 步骤 B: 剥离白字 (Flat)
-        // 只有当 flatAtk 存在且勾选显示时才剥离
         const flatRatio = finalAtk > 0 ? (cardTotalFlatAtk * (1 + totalPct/100) / finalAtk) : 0;
-        
         if (showFlatBreakdown && flatRatio > 0) {
-            // 白字贡献 = (无雪地熊的总伤) * 占比
             val_flat = dpsWithoutSnow * flatRatio;
-
-            // 将组件还原到 "无白字" 状态
             fullSwingDps *= (1 - flatRatio);
             for (let k in skillBreakdown) {
                 if(!k.startsWith('_')) skillBreakdown[k] *= (1 - flatRatio);
             }
         }
 
-        // 步骤 C: 剥离攻击百分比 (Buff) - 仅针对平砍
-        // 此时 fullSwingDps 已经是 (Base + PctBuff) 的状态 (不含白字、不含雪地熊)
-        // Buff收益 = 当前Swing - (当前Swing / (1+总Pct) * (1+外Pct))
+        // 计算攻击力百分比收益
+        let buffLabel = ' 攻击力百分比收益';
         if (cardAtkPct > 0) {
             val_buff = fullSwingDps * (1 - (1 + extraPct/100)/(1 + totalPct/100));
+            
+            // 【新增逻辑】计算具体的攻击力提升数值
+            // 基础(含白字) * (丹青百分比 / 100)
+            const absAtkGain = realBaseAtk * (cardAtkPct / 100);
+            buffLabel = ` 攻击力百分比收益 (↑${cardAtkPct.toFixed(1)}% / <span style="color:#f1c40f">+${Math.round(absAtkGain)}</span>)`;
         }
 
-        // 步骤 D: 剩余的即为基础 (Base)
         val_base = fullSwingDps - val_buff;
 
-        // --- 6. 组装 Breakdown 列表 ---
+        // --- 6. 组装 ---
         let breakdownList = [];
+        let baseLabel = useDilution ? ' 玩家固有 (含稀释)' : ' 玩家固有伤害';
+        if (isEq('snowbear') && finalIceRate > 0) baseLabel += snowbearLabel;
 
-        // 基础
-        breakdownList.push({ id:'base', label: useDilution?' 玩家固有 (含稀释)':' 玩家固有伤害', val: val_base, freq:0 });
+        breakdownList.push({ id:'base', label: baseLabel, val: val_base, freq:0 });
         
-        // 攻击Buff
         if (cardAtkPct > 0 || val_buff > 1) { 
-            breakdownList.push({ id:'buff', label:' 攻击力百分比收益', val: val_buff, freq:0 });
+            breakdownList.push({ id:'buff', label: buffLabel, val: val_buff, freq:0 });
         }
 
-        // 白字
         if (showFlatBreakdown) {
             breakdownList.push({ id:'flat', label:' 丹青白字核心提升', val: val_flat, freq:0 });
         }
 
-        // 技能 (已经是剥离后的纯数值)
         if(skillBreakdown.ice > 0) breakdownList.push({ id:'ice', label:' 冰箭', val: skillBreakdown.ice, freq: finalIceRate });
         if(skillBreakdown.pulse > 0) breakdownList.push({ id:'pulse', label:' 脉冲', val: skillBreakdown.pulse, freq: pulseHitRate });
         if(skillBreakdown.burn > 0) breakdownList.push({ id:'burn', label: skillBreakdown._burnLabel, val: skillBreakdown.burn, freq: 0.3333 });
-        if(skillBreakdown.ignite > 0) breakdownList.push({ id:'ignite', label:' 二尾妖狐 - 引燃', val: skillBreakdown.ignite, freq: totalIgniteTriggers });
+        if(skillBreakdown.ignite > 0) breakdownList.push({ id:'ignite', label:' 二尾妖狐-引燃', val: skillBreakdown.ignite, freq: totalIgniteTriggers });
         if(skillBreakdown.explode > 0) breakdownList.push({ id:'explode', label: skillBreakdown._explodeLabel, val: skillBreakdown.explode, freq: explodeFreq });
-        if(skillBreakdown.qihao > 0) breakdownList.push({ id:'qihao', label:' 齐昊 - 玄冰风暴', val: skillBreakdown.qihao, freq: 1/(60/(1+finalIceRate)) });
+        if(skillBreakdown.qihao > 0) breakdownList.push({ id:'qihao', label:' 齐昊-玄冰风暴', val: skillBreakdown.qihao, freq: 1/(60/(1+finalIceRate)) });
 
-        // 雪地熊 (最后加入列表)
         if (val_snowbear > 0) {
             breakdownList.push({ id:'snowbear', label: snowbearLabel, val: val_snowbear, freq: 0 });
         }
@@ -758,7 +825,6 @@ function calc() {
         const inc = baselineDps > 0 ? ((currentTotalDps - baselineDps)/baselineDps * 100) : 0;
         document.getElementById('res-percent').innerText = `+${inc.toFixed(1)}%`;
 
-        // 列表排序与HTML生成
         const dpsListEl = document.getElementById('dps-list');
         let sortedList = breakdownList.sort((a, b) => dpsSortDir === 'desc' ? b.val - a.val : a.val - b.val);
 
@@ -783,7 +849,6 @@ function calc() {
             if(obj.id==='qihao') color='#9b59b6';
             if(obj.id==='buff') color='#7f8c8d'; 
             if(obj.id==='flat') color='#00d2d3'; 
-            // 给雪地熊一个独特的颜色 (浅粉红)
             if(obj.id==='snowbear') color='#ff9ff3';
 
             return `
@@ -800,41 +865,47 @@ function calc() {
         const arrow = document.getElementById('sort-arrow');
         arrow.innerText = dpsSortDir === 'desc' ? '▼' : '▲';
         arrow.style.color = '#fff'; 
-
-        updateExtraEffects();
+        
+        updateExtraEffects(finalAtk);
     }
 
-    function updateExtraEffects() {
+    
+    function updateExtraEffects(currentAtk = 0) {
         const container = document.getElementById('extra-effects-box');
         const content = document.getElementById('extra-list-content');
         let html = '';
         
-        // 辅助格式化
         const fmt = (n) => parseFloat(n.toFixed(2));
+        
+        // 【修改点】：去掉了 ≈，保留括号和千分位
+        const fmtAbs = (pct) => {
+            if (!currentAtk) return '';
+            const absVal = Math.round(currentAtk * pct / 100);
+            return ` <span style="color:#7f8c8d; font-size:11px;">(<span style="color:#2ecc71">${absVal.toLocaleString()}</span>)</span>`;
+        };
 
-        // 定义哪些卡牌有额外效果，以及如何显示
         const handlers = {
-            // 纯面板属性
             'xiaohuan': (val) => `会心等级 +<span class="highlight">${fmt(val)}</span>`,
             'wilddog': (val) => `化伤与秽灭 +<span class="highlight">${fmt(val)}</span>`,
             'turtle': (val) => `专精等级 +<span class="highlight">${fmt(val)}</span>`,
             'kite': (val) => `调息等级 +<span class="highlight">${fmt(val)}</span>`,
-            
-            // 防御/生存类
             'threetail': (val) => `每层燃烧提供防御 +<span class="highlight">${fmt(val)}</span>`,
-            'ghostdog': (val) => `受击引燃 (内置冷却 <span class="highlight">${fmt(val)}</span> 秒)`,
-            'pearl': (val) => `脉冲使气血恢复提高 <span class="highlight">${fmt(val)}%</span>`,
-            'hehuanbell': (val) => `受击回复 <span class="highlight">${fmt(val)}%</span> 攻击力的气血`,
             
-            // 混合类（既有伤害也有治疗/其他）
+            'ghostdog': (val) => `受击引燃 (内置冷却 <span class="highlight">${fmt(val)}</span> 秒)`,
+            
             'zuogui': (val) => `气血恢复效果提高 <span class="highlight">${fmt(val)}%</span>`,
+            'pearl': (val) => `脉冲使气血恢复提高 <span class="highlight">${fmt(val)}%</span>`,
+
+            'hehuanbell': (val) => {
+                return `受击回复 <span class="highlight">${fmt(val)}%</span>${fmtAbs(val)} 攻击力的气血`;
+            },
             'fan': (val, lv) => {
                 const heal = 4.8 + (1.2 * lv / 6);
-                return `脉冲治疗队友 <span class="highlight">${fmt(heal)}%</span>`;
+                return `脉冲治疗队友 <span class="highlight">${fmt(heal)}%</span>${fmtAbs(heal)}`;
             },
             'dice': (val, lv) => {
                 const heal = 9.0 + (3.0 * lv / 6);
-                return `脉冲额外气血恢复 <span class="highlight">${fmt(heal)}%</span>`;
+                return `脉冲额外气血恢复 <span class="highlight">${fmt(heal)}%</span>${fmtAbs(heal)}`;
             }
         };
 
@@ -854,7 +925,6 @@ function calc() {
 
         content.innerHTML = html;
 
-        // 如果没有内容，隐藏整个盒子
         if (html === '') {
             container.classList.add('hidden');
         } else {
@@ -987,6 +1057,7 @@ function renderList() {
     }
 
     let currDetail = null;
+
     function showDetail(id) {
         currDetail = id;
         renderList(); 
@@ -995,28 +1066,56 @@ function renderList() {
         let val = getStatVal(id);
         const lv = state[id].level;
         
-        // 格式化辅助函数
         const fmt = (n) => parseFloat(n.toFixed(2));
         
+        // 格式化绝对数值 (1234)
+        const fmtAbs = (pct) => {
+            if (!g_finalAtk || pct === 0) return '';
+            const absVal = Math.round(g_finalAtk * pct / 100);
+            return `<span style="color:#7f8c8d; font-size:12px; font-weight:normal;"> (${absVal})</span>`;
+        };
+
+        // 【新增】智能替换函数
+        // 作用：如果文本是 "{val}%"，会替换成 "数值% (绝对值)"，而不是 "数值 (绝对值)%"
+        const replaceSmart = (text, tag, value, showAbs) => {
+            const valHtml = `<span class="highlight">${fmt(value)}</span>`;
+            const absHtml = showAbs ? fmtAbs(value) : '';
+            
+            // 优先匹配带 % 的情况，调整顺序
+            if (text.includes(tag + '%')) {
+                return text.replace(tag + '%', valHtml + '%' + absHtml);
+            }
+            // 普通情况
+            return text.replace(tag, valHtml + absHtml);
+        };
+
         let desc = c.desc;
 
-        // --- 特殊卡牌描述处理 ---
+        const dmgOrHealIds = [
+            'yanhong', 'redant', 'twotail', 'sixtail', 
+            'fan', 'dice', 'qihao', 'mirror', 
+            'hehuanbell'
+        ];
+
+        // --- 特殊卡牌处理 ---
         if (id === 'linfeng') {
             const iceChance = 70 + ((100-70)/6 * lv);
             desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`)
                         .replace('{ice}', `<span class="highlight">${fmt(iceChance)}</span>`);
         } 
-        else if (id === 'fan') { // 折扇
+        else if (id === 'fan') { 
             const healVal = 4.8 + (1.2 * lv / 6);
-            desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`)
-                       .replace('{heal}', `<span class="highlight">${fmt(healVal)}</span>`);
+            // 伤害
+            desc = replaceSmart(desc, '{val}', val, true);
+            // 治疗
+            desc = replaceSmart(desc, '{heal}', healVal, true);
         }
-        else if (id === 'dice') { // 神木骰
+        else if (id === 'dice') { 
             const healVal = 9.0 + (3.0 * lv / 6);
-            desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`)
-                       .replace('{heal}', `<span class="highlight">${fmt(healVal)}</span>`);
+            desc = replaceSmart(desc, '{val}', val, true);
+            desc = replaceSmart(desc, '{heal}', healVal, true);
         }
-        else if (id === 'snowbear') { // 雪地熊
+        else if (id === 'snowbear') { 
             let linfengIceChance = 0;
             if (state['linfeng'] && state['linfeng'].equipped) {
                 linfengIceChance = 0.7 + ((1.0 - 0.7)/6 * state['linfeng'].level);
@@ -1030,17 +1129,18 @@ function renderList() {
             let rate = rawIceRate * (1 + linfengIceChance);
             let avgStacks = rate * 10; 
             
-            desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`)
-                       .replace('{avgStacks}', `<span class="highlight">${fmt(avgStacks)}</span>`);
+            desc = replaceSmart(desc, '{val}', val, false);
+            desc = desc.replace('{avgStacks}', `<span class="highlight">${fmt(avgStacks)}</span>`);
         }
-        else if (id === 'hehuanbell') { // 【新增】合欢铃
-            // 直接显示 stat 里的百分比数值 (680~800)
-            desc = desc.replace('{val}', `<span class="highlight">${fmt(val)}</span>`);
+        else if (id === 'hehuanbell') {
+             desc = replaceSmart(desc, '{val}', val, true);
         }
         else {
-            const displayVal = fmt(val);
-            desc = desc.replace('{val}', `<span class="highlight">${displayVal}</span>`)
-                        .replace('{freq}', `<span class="highlight">${displayVal}</span>`);
+            // 通用处理
+            const showAbs = dmgOrHealIds.includes(id);
+            desc = replaceSmart(desc, '{val}', val, showAbs);
+            // 频率类不做绝对值处理
+            desc = desc.replace('{freq}', `<span class="highlight">${fmt(val)}</span>`);
         }
 
         document.getElementById('detail-content').innerHTML = `
@@ -1048,7 +1148,6 @@ function renderList() {
             <div class="detail-desc">${desc}</div>
         `;
     }
-
     renderList();
 </script>
 
