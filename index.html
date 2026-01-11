@@ -264,44 +264,41 @@
                 flex: none;
                 width: 100%;
                 height: auto;
-                max-height: 600px; /* 稍微给高一点，方便浏览 */
+                max-height: none; /* 取消最大高度限制，由 scroll-area 控制 */
                 margin-bottom: 20px;
             }
 
-            /* 【关键修改 1】头部改为两行显示 */
             .list-header {
-                flex-direction: column; /* 上下排列 */
-                align-items: stretch;   /* 宽度拉伸填满 */
-                gap: 12px;              /* 两行之间的间距 */
-                height: auto;           /* 取消高度限制 */
+                flex-direction: column;
+                align-items: stretch;
+                gap: 12px;
+                height: auto;
                 padding: 15px;
             }
 
-            /* 第一行：标题 + 六个圈 */
             .header-left-group {
                 width: 100%;
-                justify-content: space-between; /* 两端对齐 */
+                justify-content: space-between;
             }
 
-            /* 第二行：三个按钮 */
             .header-btn-group {
                 width: 100%;
                 display: flex;
                 gap: 10px;
             }
             
-            /* 让按钮平分宽度，按起来更舒服 */
             .ctrl-btn, .clear-btn {
                 flex: 1; 
                 text-align: center;
                 padding: 8px 0;
             }
 
-            /* 【关键修改 2】卡牌列表改为两列 */
+            /* 【关键修改 1】卡牌列表：2列 x 5行 */
             .scroll-area {
-                height: 300px; 
+                /* 卡牌高度约74px + 间距12px ≈ 86px/行 */
+                /* 5行 ≈ 430px */
+                height: 430px; 
                 overflow-y: auto;
-                /* 从 3列 改为 2列 */
                 grid-template-columns: repeat(2, 1fr); 
             }
 
@@ -317,14 +314,32 @@
                 padding: 15px;
             }
 
-            .left-group, .right-group {
+            /* 【关键修改 2】左侧输入组：允许换行，变成2x2网格 */
+            .left-group {
                 width: 100%;
                 justify-content: space-between;
                 border-left: none;
                 padding-left: 0;
+                
+                /* 开启换行 */
+                flex-wrap: wrap; 
+                gap: 10px; /* 上下行的间距 */
+            }
+
+            /* 让每个输入框占一半不到的宽度，这样一行刚好放2个 */
+            .inp-item {
+                width: 48%; 
+            }
+            
+            /* 让输入框填满它的容器 */
+            .inp-item input {
+                width: 100%;
+                box-sizing: border-box; /* 防止padding撑破宽度 */
             }
             
             .right-group {
+                width: 100%;
+                justify-content: space-between;
                 border-top: 1px solid rgba(255,255,255,0.1);
                 padding-top: 15px;
             }
@@ -337,7 +352,6 @@
             .stat-val { font-size: 18px; }
             .card-item { height: auto; padding: 10px; }
             
-            /* 底部页脚防拥挤 */
             .footer-info {
                 margin-bottom: 30px;
             }
