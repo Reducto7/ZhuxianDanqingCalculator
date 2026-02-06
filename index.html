@@ -332,6 +332,7 @@
             .layout {
                 flex-direction: column;
                 height: auto;
+                padding-bottom: 20px; /* 底部留白 */
             }
 
             .card-list-panel {
@@ -339,12 +340,28 @@
                 width: 100%;
                 height: auto; 
                 max-height: none; 
-                margin-bottom: 0px;
-                /* 移动端不分栏，或者垂直堆叠 */
+                margin-bottom: 15px; /* 上下模块间距 */
             }
             
-            .panel-top { flex: none; height: 400px; }
-            .panel-bottom { flex: none; height: auto; }
+            .panel-top { 
+                flex: none; 
+                height: 400px; 
+            }
+            
+            /* 【优化点2】限制模拟器高度，防止无限长 */
+            .panel-bottom { 
+                flex: none; 
+                height: 500px; /* 给定固定高度 */
+                display: flex;
+                flex-direction: column;
+            }
+            /* 确保结果区域可以滚动 */
+            .sim-results {
+                flex: 1;
+                overflow-y: auto !important;
+                /* 增加底部内边距防止遮挡 */
+                padding-bottom: 20px; 
+            }
 
             .list-header {
                 flex-direction: column;
@@ -397,6 +414,86 @@
             .card-item { height: auto; padding: 10px; }
             .footer-info { margin-bottom: 30px; }
             .copyright { gap: 5px; }
+
+            /* --- 模拟器头部：改为两行布局 --- */
+            .sim-header {
+                flex-direction: column; /* 垂直排列子元素 */
+                align-items: stretch;   /* 宽度拉满 */
+                gap: 10px;              /* 上下两行的间距 */
+                height: auto;           /* 高度自适应 */
+                padding: 15px;
+            }
+
+            /* 让第二行的操作区也是两端对齐，或者撑满 */
+            .sim-ctrl {
+                width: 100%;
+                justify-content: space-between; /* 让输入框和按钮各站一边 */
+                gap: 10px;
+            }
+            
+            /* 让按钮自适应宽度，方便点击 */
+            .sim-btn {
+                flex: 1; 
+                margin-left: 10px;
+            }
+
+            /* 【优化点1】重构模拟器结果行布局 */
+            .sim-row {
+                display: grid !important; /* 启用网格布局 */
+                /* 定义三列：排名(自适应) | 卡牌(占满剩余) | 按钮(自适应) */
+                /* 定义两行：第一行放卡牌，第二行放数据 */
+                grid-template-areas: 
+                    "rank cards cards"
+                    "empty dps btn";
+                grid-template-columns: auto 1fr auto;
+                grid-template-rows: auto auto;
+                gap: 8px; /* 元素间距 */
+                padding: 12px;
+                align-items: center;
+            }
+
+            .sim-rank {
+                display: flex;
+                flex-direction: column !important; /* 强制垂直排列，分为上下两行 */
+                align-items: center;    /* 水平居中 */
+                justify-content: center;
+                width: 30px; /* 稍微缩窄宽度，给右侧腾空间 */
+                margin-right: 5px;
+                line-height: 1.2; /* 调整行高，让两行紧凑一点 */
+            }
+            
+            /* 排名数字 (#1) */
+            .sim-rank div:first-child { 
+                font-size: 16px; 
+                font-weight: bold;
+            }
+            
+            /* 百分比数字 (100%) */
+            .rank-pct { 
+                font-size: 11px; /* 字体改小，以此区分层级 */
+                color: #7f8c8d;
+                margin-top: 2px; /* 与排名数字拉开一点点间距 */
+            }
+
+            .sim-cards {
+                grid-area: cards;
+                margin: 0;
+                flex-wrap: wrap;
+                justify-content: flex-start;
+            }
+            
+            .sim-dps {
+                grid-area: dps;
+                text-align: right;
+                font-size: 18px; /* 放大数字 */
+                margin-right: 10px; /* 与按钮拉开距离 */
+            }
+
+            .apply-btn {
+                grid-area: btn;
+                margin: 0;
+                padding: 6px 12px;
+            }
         }
         
     </style>
@@ -428,12 +525,12 @@
 
         <div class="panel-bottom">
             <div class="sim-header">
-                <div class="sim-title">
-                    <span>自动模拟最优解</span>
+                <div class="sim-row-top">
+                    <span class="sim-title">自动模拟最优组合</span>
+                    <span id="sim-time" class="sim-info-text"></span>
                 </div>
                 <div class="sim-ctrl">
-                    <span id="sim-time" class="sim-info-text"></span>
-                    <label style="font-size:12px; color:#bdc3c7;">可用 Cost:</label>
+                    <label style="color:#bdc3c7;">可用 Cost:</label>
                     <input type="number" id="sim-cost" class="sim-input" value="15">
                     <button class="sim-btn" onclick="runSimulation()" id="btn-sim">开始计算</button>
                 </div>
@@ -587,41 +684,43 @@
 
     const DB = [
         // --- A类 (核心) ---
-        { id: 'yanhong', name: '燕虹', type: 'human', cost: 1, desc: '冰箭基础伤害 {val}% 攻击力', stat: Linear(28, 40), effect: 'ice_base', simType: 'A' },
-        { id: 'redant', name: '猩红巨蚁', type: 'beast', cost: 1, desc: '燃烧基础伤害 {val}% 攻击力 (每3秒一跳)', stat: Linear(1.4, 2), effect: 'burn_base', simType: 'A' },
-        { id: 'woodsword', name: '木剑', type: 'tool', cost: 1, desc: '攻击力增加 {val}% (固定)', stat: Linear(0.56, 0.80), effect: 'fixed_atk', simType: 'A' },
-        { id: 'fan', name: '折扇', type: 'tool', cost: 1, desc: '脉冲基础伤害 {val}% 攻击力 (每15秒)', stat: Linear(40, 52), effect: 'pulse_base', simType: 'A' },
+        { id: 'yanhong', name: '燕虹', type: 'human', cost: 1, desc: '释放技能时，向目标发射一枚冰箭，造成{val}%固定伤害（6秒冷却）', stat: Linear(28, 40), effect: 'ice_base', simType: 'A' },
+        { id: 'redant', name: '猩红巨蚁', type: 'beast', cost: 1, desc: '造成伤害时，引燃目标和目标周围的所有敌人，添加燃烧，每3秒造成{val}%固定伤害，持续18秒，燃烧最多可以叠加12层（8秒内置冷却）', stat: Linear(1.4, 2), effect: 'burn_base', simType: 'A' },
+         
+        { id: 'zhou', name: '周一仙', type: 'human', cost: 2, desc: '每装备一张人族卡牌，物理和法术攻击力提高{val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk', simType: 'A' },
+        { id: 'wenmin', name: '文敏', type: 'human', cost: 2, desc: '战斗中每间隔{freq}秒，向目标发射3枚冰箭', stat: {v0: 16, v6: 10}, effect: 'ice_add_freq', simType: 'A' },
+        { id: 'shangguan', name: '上官策', type: 'human', cost: 2, desc: '冰箭有{val}%概率赋予目标1层燃烧', stat: Linear(38, 50), effect: 'ice_trigger_burn', simType: 'A' },
+        { id: 'tiger', name: '猛虎', type: 'beast', cost: 2, desc: '每装备一张兽族卡牌，物理和法术攻击力提高{val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk', simType: 'A' },
+        { id: 'twotail', name: '二尾妖狐', type: 'beast', cost: 2, desc: '当自身尝试为目标添加燃烧时，立刻对目标造成{val}%伤害', stat: Linear(28, 40), effect: 'burn_on_hit', simType: 'A' },
+        { id: 'banner', name: '“仙人”布幡', type: 'tool', cost: 2, desc: '每装备一张器物卡牌，物理和法术攻击力提高{val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk', simType: 'A' },
+        { id: 'dice', name: '神木骰', type: 'tool', cost: 2, desc: '脉冲造成伤害或气血恢复效果时，在10秒内额外造成{val}%伤害或{heal}%气血恢复，进入战斗时立刻触发3次脉冲。', stat: Fixed(70), effect: 'dice_buff', simType: 'A' },
         
-        { id: 'zhou', name: '周一仙', type: 'human', cost: 2, desc: '每有一张人族卡，攻击力增加 {val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk', simType: 'A' },
-        { id: 'wenmin', name: '文敏', type: 'human', cost: 2, desc: '每 {freq} 秒发射3支冰箭', stat: {v0: 16, v6: 10}, effect: 'ice_add_freq', simType: 'A' },
-        { id: 'shangguan', name: '上官策', type: 'human', cost: 2, desc: '冰箭有 {val}% 概率附加燃烧', stat: Linear(38, 50), effect: 'ice_trigger_burn', simType: 'A' },
-        { id: 'tiger', name: '猛虎', type: 'beast', cost: 2, desc: '每有一张兽族卡，攻击力增加 {val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk', simType: 'A' },
-        { id: 'twotail', name: '二尾妖狐', type: 'beast', cost: 2, desc: '引燃：每次施加燃烧(含林峰额外触发)时，瞬间造成 {val}% 伤害', stat: Linear(28, 40), effect: 'burn_on_hit', simType: 'A' },
-        { id: 'banner', name: '仙人布幡', type: 'tool', cost: 2, desc: '每有一张器族卡，攻击力增加 {val}%', stat: Linear(0.56, 0.80), effect: 'count_race_atk', simType: 'A' },
-        { id: 'dice', name: '神木骰', type: 'tool', cost: 2, desc: '脉冲追加 {val}% 伤害(忽略进场效果)', stat: Fixed(70), effect: 'dice_buff', simType: 'A' },
+        { id: 'linfeng', name: '林峰', type: 'human', cost: 3, desc: '附加燃烧效果时有{val}%概率额外叠加1层燃烧，召唤冰箭时有{ice}%概率额外召唤一枚冰箭', stat: Linear(42, 60), effect: 'linfeng_dual', simType: 'A' }, 
+        { id: 'suishou', name: '岁兽', type: 'beast', cost: 3, desc: '脉冲命中敌人时，有{val}%概率为其添加3层燃烧效果', stat: Linear(70, 100), effect: 'pulse_trigger_burn', simType: 'A' },
+        { id: 'bamboo', name: '寒冰剑', type: 'tool', cost: 3, desc: '召唤{freq}枚冰箭后，触发脉冲', stat: {v0: 16, v6: 10}, effect: 'ice_count_pulse', simType: 'A' },
         
-        { id: 'linfeng', name: '林峰', type: 'human', cost: 3, desc: '燃烧判定时{val}%概率多一次判定(触发引燃)，召唤冰箭{ice}%概率多一根', stat: Linear(42, 60), effect: 'linfeng_dual', simType: 'A' }, 
-        { id: 'suishou', name: '岁兽', type: 'beast', cost: 3, desc: '脉冲命中时 {val}% 概率添加3层燃烧(视为3次独立施加)', stat: Linear(70, 100), effect: 'pulse_trigger_burn', simType: 'A' },
-        { id: 'bamboo', name: '寒冰箭', type: 'tool', cost: 3, desc: '每 {freq} 次冰箭触发一次脉冲', stat: {v0: 16, v6: 10}, effect: 'ice_count_pulse', simType: 'A' },
+        { id: 'zuogui', name: '左归', type: 'human', cost: 4, desc: '所有丹青特效伤害提升{val}%', stat: Linear(28, 40), effect: 'global_dmg_mult', simType: 'A' },
+        { id: 'snowbear', name: '雪地熊', type: 'beast', cost: 4, desc: '召唤冰箭时，造成的伤害额外提高{val}%，持续10秒，可多次叠加，每层效果独立计算持续时间', stat: Linear(0.38, 0.5), effect: 'snowbear_buff', simType: 'A' },
         
-        { id: 'zuogui', name: '左归', type: 'human', cost: 4, desc: '所有丹青特效伤害提升 {val}%', stat: Linear(28, 40), effect: 'global_dmg_mult', simType: 'A' },
-        { id: 'snowbear', name: '雪地熊', type: 'beast', cost: 4, desc: '召唤冰箭增加伤害 {val}% (未实装)', stat: Linear(0.38, 0.5), effect: 'snowbear_buff', simType: 'A' },
-        
-        { id: 'qihao', name: '齐昊', type: 'human', cost: 5, desc: '60秒一次玄冰风暴({val}%伤害)，每冰箭减1秒CD', stat: Linear(1040, 1400), effect: 'qihao_nuke', simType: 'A' },
-        { id: 'sixtail', name: '六尾魔狐', type: 'beast', cost: 5, desc: '燃烧8层引爆，造成每层 {val}% 的AOE伤害并清层', stat: Linear(50, 68), effect: 'sixtail_explode', simType: 'A' },
-        { id: 'mirror', name: '六合镜', type: 'tool', cost: 5, desc: '脉冲50%概率回响，造成4次 {val}% 伤害', stat: Linear(140, 200), effect: 'mirror_echo', simType: 'A' },
+        { id: 'qihao', name: '齐昊', type: 'human', cost: 5, desc: '召唤一只冰霜元素，向目标发射玄冰风暴，造成{val}%固定伤害，每间隔60秒仅可触发一次；每召唤一枚冰箭，冰霜元素的冷却时间缩短1秒', stat: Linear(1040, 1400), effect: 'qihao_nuke', simType: 'A' },
+        { id: 'sixtail', name: '六尾魔狐', type: 'beast', cost: 5, desc: '燃烧叠加至8层以上时，触发爆燃：1.5秒后，引爆目标身上所有的燃烧效果，每引爆1层燃烧效果，对目标和目标周围的敌人造成{val}%伤害', stat: Linear(50, 68), effect: 'sixtail_explode', simType: 'A' },
+        { id: 'mirror', name: '六合镜', type: 'tool', cost: 5, desc: '触发脉冲时，有50%概率使自身获得回响效果，持续6秒。回响：每1秒以{val}%效率释放脉冲（触发4次{val}%伤害的脉冲），回响效果释放的脉冲无法附加脉冲造成的额外效果', stat: Linear(140, 200), effect: 'mirror_echo', simType: 'A' },
 
         // --- B类 (挂件) ---
+        // 【关键修正】木剑改为B类，simTier=0 (纯数值)
+        { id: 'woodsword', name: '木剑', type: 'tool', cost: 1, desc: '主属性提高{val}%', stat: Linear(0.56, 0.80), effect: 'fixed_atk', simType: 'B', simTier: 0 },
+        { id: 'fan', name: '折扇', type: 'tool', cost: 1, desc: '战斗每经过15秒，触发脉冲，对周围敌人造成{val}%伤害，为周围最多10名队友造成{heal}%治疗。', stat: Linear(40, 52), effect: 'pulse_base', simType: 'B' , simTier: 0 },
+       
         // T1: 进攻类
-        { id: 'xiaohuan', name: '小环', type: 'human', cost: 1, desc: '会心 +{val}', stat: Linear(280, 400), effect: 'crit_flat', simType: 'B', simTier: 1 },
-        { id: 'turtle', name: '海龟', type: 'beast', cost: 1, desc: '专精 +{val}', stat: Linear(280, 400), effect: 'mastery_flat', simType: 'B', simTier: 1 },
-        { id: 'kite', name: '风筝', type: 'tool', cost: 1, desc: '调息 +{val}', stat: Linear(280, 400), effect: 'haste_flat', simType: 'B', simTier: 1 },
+        { id: 'xiaohuan', name: '小环', type: 'human', cost: 1, desc: '会心提高{val}', stat: Linear(280, 400), effect: 'crit_flat', simType: 'B', simTier: 1 },
+        { id: 'turtle', name: '海龟', type: 'beast', cost: 1, desc: '专精提高{val}', stat: Linear(280, 400), effect: 'mastery_flat', simType: 'B', simTier: 1 },
+        { id: 'kite', name: '风筝', type: 'tool', cost: 1, desc: '调息提高{val}', stat: Linear(280, 400), effect: 'haste_flat', simType: 'B', simTier: 1 },
         
         // T2: 生存类
-        { id: 'ghostdog', name: '幽冥犬', type: 'beast', cost: 2, desc: '被攻击添加燃烧 (不计入DPS)', stat: Fixed(0), effect: 'none', simType: 'B', simTier: 2 },
+        { id: 'ghostdog', name: '幽冥犬', type: 'beast', cost: 2, desc: '受到伤害时会引燃周围的敌人，对周围的所有敌人添加1层燃烧（{val}秒内置冷却）', stat: Linear(10, 4), effect: 'none', simType: 'B', simTier: 2 },
         { id: 'pearl', name: '清凉珠', type: 'tool', cost: 3, desc: '触发脉冲时，自身气血恢复效果提高{val}%，持续10秒。', stat: Linear(2.8, 4), effect: 'none', simType: 'B', simTier: 2 },
         { id: 'threetail', name: '三尾妖狐', type: 'beast', cost: 4, desc: '每个激活的燃烧使自身防御力提高{val}', stat: Linear(140, 200), effect: 'none', simType: 'B', simTier: 2 },
-        { id: 'hehuanbell', name: '合欢铃', type: 'tool', cost: 4, desc: '受到伤害时，恢复{val}%攻击力的气血。', stat: Linear(680, 800), effect: 'none', simType: 'B', simTier: 2 },
+        { id: 'hehuanbell', name: '合欢铃', type: 'tool', cost: 4, desc: '受到伤害时，恢复{val}%攻击力的气血。接下来受到40%伤害。\n气血低于30%时，受到伤害立刻恢复自身63193气血，但接下来的10秒内，自身总计受到3718伤害，此效果有120秒冷却。', stat: Linear(680, 800), effect: 'none', simType: 'B', simTier: 2 },
 
         // --- Excluded ---
         { id: 'wilddog', name: '野狗道人', type: 'human', cost: 1, desc: '化伤和秽灭提高{val}', stat: Linear(56, 80), effect: 'none', simType: 'X' },
@@ -815,39 +914,66 @@
             const fillerPool = DB.filter(c => c.simType === 'B');
             
             let bestResults = []; 
+            
+            // --- 在这里修改显示的条目数量 ---
+            const MAX_COUNT = 100; 
 
             function updateResults(ids, dps) {
-                if (bestResults.length < 5) {
+                // 如果结果还没填满 MAX_COUNT 个
+                if (bestResults.length < MAX_COUNT) {
                     bestResults.push({ ids: new Set(ids), dps });
                     bestResults.sort((a,b) => b.dps - a.dps);
-                } else if (dps > bestResults[4].dps) {
-                    bestResults[4] = { ids: new Set(ids), dps };
+                } 
+                // 如果满了，但是比当前最后一名（最小的那个）要强，则替换掉最后一名
+                else if (dps > bestResults[bestResults.length - 1].dps) {
+                    bestResults[bestResults.length - 1] = { ids: new Set(ids), dps };
                     bestResults.sort((a,b) => b.dps - a.dps);
                 }
             }
 
-            // 贪心填充 B 类卡
+            // 贪心填充 B 类卡 (引入评分机制)
             function fillRestCost(currentIds, remainingCost) {
                 if (remainingCost <= 0) return new Set(currentIds);
                 
                 let filledIds = new Set(currentIds);
                 let currentRem = remainingCost;
                 
-                // 检测羁绊
-                const hasZhou = filledIds.has('zhou');
-                const hasTiger = filledIds.has('tiger');
-                const hasBanner = filledIds.has('banner');
+                // 1. 检测当前组合已有的种族羁绊
+                const hasZhou = filledIds.has('zhou');     // 人族加攻
+                const hasTiger = filledIds.has('tiger');   // 兽族加攻
+                const hasBanner = filledIds.has('banner'); // 器族加攻
 
-                // 动态计算挂件权值
+                // 2. 获取当前羁绊卡的数值 (用于计算收益)
+                const valZhou = hasZhou ? getStatVal('zhou') : 0;
+                const valTiger = hasTiger ? getStatVal('tiger') : 0;
+                const valBanner = hasBanner ? getStatVal('banner') : 0;
+
+                // 3. 对所有 B 类卡进行动态评分
                 let availableFillers = fillerPool.map(c => {
-                    let score = (c.simTier === 1) ? 20 : 10; // T1优先级更高
-                    if (c.type === 'human' && hasZhou) score += 1000;
-                    if (c.type === 'beast' && hasTiger) score += 1000;
-                    if (c.type === 'tool' && hasBanner) score += 1000;
-                    return { ...c, score };
-                }).sort((a, b) => b.score - a.score); // 按优先级降序
+                    let atkBonus = 0;
 
-                // 贪心塞入
+                    // A. 自身提供的攻击力 (目前只有木剑)
+                    if (c.id === 'woodsword') {
+                        atkBonus += getStatVal('woodsword');
+                    }
+
+                    // B. 羁绊提供的攻击力 (种族匹配)
+                    if (c.type === 'human' && hasZhou) atkBonus += valZhou;
+                    if (c.type === 'beast' && hasTiger) atkBonus += valTiger;
+                    if (c.type === 'tool' && hasBanner) atkBonus += valBanner;
+
+                    // C. 软属性评分 (同攻击力下的 Tie-Breaker)
+                    // T1(会心/专精/调息)=20分, T2(生存)=10分, 无=0分
+                    let utilityScore = (c.simTier === 1) ? 20 : ((c.simTier === 2) ? 10 : 0);
+
+                    // 总分 = 攻击力收益(权重极大) + 软属性评分
+                    // * 10000 确保攻击力哪怕多 0.01% 也优于所有软属性
+                    let score = (atkBonus * 10000) + utilityScore;
+
+                    return { ...c, score };
+                }).sort((a, b) => b.score - a.score); // 按总分降序排列
+
+                // 4. 按高分优先填充
                 for (let card of availableFillers) {
                     if (currentRem >= card.cost && !filledIds.has(card.id)) {
                         filledIds.add(card.id);
@@ -892,7 +1018,7 @@
 
     function renderSimResults(results, time) {
         const div = document.getElementById('sim-results');
-        document.getElementById('sim-time').innerText = `耗时: ${time.toFixed(0)}ms`;
+        //document.getElementById('sim-time').innerText = `耗时: ${time.toFixed(0)}ms`;
 
         if (results.length === 0) {
             div.innerHTML = '<div style="text-align:center;">没有找到符合条件的组合</div>';
@@ -914,9 +1040,7 @@
 
             sortedIds.forEach(id => {
                 const c = DB.find(x=>x.id===id);
-                // 挂件卡稍微淡一点显示
-                const opacity = c.simType === 'B' ? '0.8' : '1';
-                cardBadges += `<span class="mini-card type-${c.type}" style="opacity:${opacity}">${c.name} <span style="opacity:0.6">${c.cost}</span></span>`;
+                cardBadges += `<span class="mini-card type-${c.type}">${c.name} <span style="opacity:0.6">${c.cost}</span></span>`;
             });
 
             const idString = sortedIds.join(',');
@@ -1165,7 +1289,6 @@
         // --- 6. 组装 ---
         let breakdownList = [];
         let baseLabel = useDilution ? ' 玩家固有 (含稀释)' : ' 玩家固有伤害';
-        if (isEq('snowbear') && finalIceRate > 0) baseLabel += snowbearLabel;
 
         breakdownList.push({ id:'base', label: baseLabel, val: val_base, freq:0 });
         
